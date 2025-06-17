@@ -3,9 +3,9 @@
 import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import DispatchAlertScreen from "@/components/dispatch-alert-screen"
-import SosScreen from "@/components/sos-screen"
+import SettingsScreen from "@/components/settings-screen"
 import LoginScreen from "@/components/login-screen"
-import { AlertTriangle, FileText, Home, Radio } from "lucide-react"
+import { AlertTriangle, FileText, Home, Radio, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -187,19 +187,19 @@ export default function EmergencyResponderApp() {
               setSelectedAlert={setSelectedAlert} 
             />
           </TabsContent>
-          <TabsContent value="sos">
-            <SosScreen />
+          <TabsContent value="settings">
+            <SettingsScreen />
           </TabsContent>
           <TabsContent value="report">
             <ReportScreen selectedAlert={selectedAlert} />
           </TabsContent>
           <TabsList className="fixed bottom-0 left-0 right-0 h-16 grid grid-cols-4 bg-white border-t border-gray-200">
             <TabsTrigger
-              value="alerts"
+              value="home"
               className="flex flex-col items-center justify-center data-[state=active]:text-red-600"
             >
-              <Bell className="h-5 w-5" />
-              <span className="text-xs mt-1">Alerts</span>
+              <Home className="h-5 w-5" />
+              <span className="text-xs mt-1">Home</span>
             </TabsTrigger>
             <TabsTrigger
               value="dispatch"
@@ -216,11 +216,11 @@ export default function EmergencyResponderApp() {
               <span className="text-xs mt-1">Report</span>
             </TabsTrigger>
             <TabsTrigger
-              value="sos"
+              value="settings"
               className="flex flex-col items-center justify-center data-[state=active]:text-red-600"
             >
-              <Phone className="h-5 w-5" />
-              <span className="text-xs mt-1">SOS</span>
+              <Settings className="h-5 w-5" />
+              <span className="text-xs mt-1">Settings</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>

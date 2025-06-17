@@ -16,11 +16,22 @@ interface GpsData {
 }
 
 // Database connection configuration
-const dbConfig = {
+/*const dbConfig = {
   host: '127.0.0.1',
   user: 'root',
   password: 'GF@dm1n',
   database: 'edms_responder',
+  port: 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+};*/
+
+const dbConfig = {
+  host: 'sql12.freesqldatabase.com',
+  user: 'sql12785202',
+  password: 'IGkaKLGJxR',
+  database: 'sql12785202',
   port: 3306,
   waitForConnections: true,
   connectionLimit: 10,

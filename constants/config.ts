@@ -11,7 +11,7 @@ export const ROUTES = {
   REPORT: '/report',
   REPORTS: '/reports',
   MAP: '/map',
-  SOS: '/sos',
+  SETTINGS: '/settings'
 };
 
 export const PATIENT_STATUS_OPTIONS = {
