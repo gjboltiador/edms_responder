@@ -1,0 +1,21 @@
+.leaflet-popup-content-wrapper {
+  border-radius: 0.5rem;
+}
+
+.leaflet-popup-content {
+  margin: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.leaflet-popup-tip {
+  background: white;
+}
+
+/* Fix for default marker icon */
+.leaflet-default-icon-path {
+  background-image: url('/images/marker-icon.svg');
+}
+
+.leaflet-default-shadow-path {
+  background-image: url('/images/marker-shadow.svg');
+} 
