@@ -116,7 +116,260 @@ export const db = {
 
   // Get all emergency alerts
   async getAlerts() {
-    return query('SELECT * FROM alerts ORDER BY created_at DESC');
+    return query(`
+      SELECT a.*, r.name as responder_name, r.username as responder_username
+      FROM alerts a
+      LEFT JOIN responders r ON a.responder_id = r.id
+      ORDER BY a.created_at DESC
+    `);
+  },
+
+  // Get alerts by status
+  async getAlertsByStatus(status: string) {
+    return query(`
+      SELECT a.*, r.name as responder_name, r.username as responder_username
+      FROM alerts a
+      LEFT JOIN responders r ON a.responder_id = r.id
+      WHERE a.status = ?
+      ORDER BY a.created_at DESC
+    `, [status]);
+  },
+
+  // Get unassigned alerts (no responder assigned)
+  async getUnassignedAlerts() {
+    return query(`
+      SELECT a.*, r.name as responder_name, r.username as responder_username
+      FROM alerts a
+      LEFT JOIN responders r ON a.responder_id = r.id
+      WHERE a.responder_id IS NULL AND a.status IN ('Pending', 'New')
+      ORDER BY a.created_at DESC
+    `);
+  },
+
+  // Get alerts assigned to a specific responder
+  async getAlertsByResponder(responderId: number) {
+    return query(`
+      SELECT a.*, r.name as responder_name, r.username as responder_username
+      FROM alerts a
+      LEFT JOIN responders r ON a.responder_id = r.id
+      WHERE a.responder_id = ?
+      ORDER BY a.created_at DESC
+    `, [responderId]);
+  },
+
+  // Get available responders (status = 'Available')
+  async getAvailableResponders() {
+    return query(`
+      SELECT r.*, 
+             (SELECT COUNT(*) FROM alerts a WHERE a.responder_id = r.id AND a.status IN ('Assigned', 'In Progress')) as active_assignments
+      FROM responders r
+      WHERE r.status = 'Available'
+      ORDER BY active_assignments ASC, r.last_active DESC
+    `);
+  },
+
+  // Assign a responder to an alert
+  async assignResponderToAlert(alertId: number, responderId: number, assignedBy?: number) {
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Check if responder is available
+      const [responders] = await connection.execute(
+        'SELECT status FROM responders WHERE id = ?',
+        [responderId]
+      );
+
+      if (responders.length === 0) {
+        throw new Error('Responder not found');
+      }
+
+      if (responders[0].status !== 'Available') {
+        throw new Error('Responder is not available');
+      }
+
+      // Check if alert is already assigned
+      const [alerts] = await connection.execute(
+        'SELECT responder_id, status FROM alerts WHERE id = ?',
+        [alertId]
+      );
+
+      if (alerts.length === 0) {
+        throw new Error('Alert not found');
+      }
+
+      if (alerts[0].responder_id) {
+        throw new Error('Alert is already assigned to a responder');
+      }
+
+      // Update alert with responder assignment
+      await connection.execute(
+        'UPDATE alerts SET responder_id = ?, assigned_at = NOW(), status = ? WHERE id = ?',
+        [responderId, 'Assigned', alertId]
+      );
+
+      // Update responder status to Busy
+      await connection.execute(
+        'UPDATE responders SET status = ? WHERE id = ?',
+        ['Busy', responderId]
+      );
+
+      // Log the assignment
+      await connection.execute(
+        'INSERT INTO alert_assignments (alert_id, responder_id, assigned_by, status) VALUES (?, ?, ?, ?)',
+        [alertId, responderId, assignedBy || null, 'assigned']
+      );
+
+      await connection.commit();
+
+      return { success: true, message: 'Responder assigned successfully' };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  },
+
+  // Unassign a responder from an alert
+  async unassignResponderFromAlert(alertId: number, responderId: number) {
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Check if alert is assigned to this responder
+      const [alerts] = await connection.execute(
+        'SELECT responder_id, status FROM alerts WHERE id = ?',
+        [alertId]
+      );
+
+      if (alerts.length === 0) {
+        throw new Error('Alert not found');
+      }
+
+      if (alerts[0].responder_id !== responderId) {
+        throw new Error('Alert is not assigned to this responder');
+      }
+
+      // Update alert to remove assignment
+      await connection.execute(
+        'UPDATE alerts SET responder_id = NULL, assigned_at = NULL, status = ? WHERE id = ?',
+        ['Pending', alertId]
+      );
+
+      // Update responder status back to Available
+      await connection.execute(
+        'UPDATE responders SET status = ? WHERE id = ?',
+        ['Available', responderId]
+      );
+
+      // Update assignment log
+      await connection.execute(
+        'UPDATE alert_assignments SET unassigned_at = NOW(), status = ? WHERE alert_id = ? AND responder_id = ? AND unassigned_at IS NULL',
+        ['unassigned', alertId, responderId]
+      );
+
+      await connection.commit();
+
+      return { success: true, message: 'Responder unassigned successfully' };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  },
+
+  // Accept an alert assignment
+  async acceptAlertAssignment(alertId: number, responderId: number) {
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Check if alert is assigned to this responder
+      const [alerts] = await connection.execute(
+        'SELECT responder_id, status FROM alerts WHERE id = ?',
+        [alertId]
+      );
+
+      if (alerts.length === 0) {
+        throw new Error('Alert not found');
+      }
+
+      if (alerts[0].responder_id !== responderId) {
+        throw new Error('Alert is not assigned to this responder');
+      }
+
+      // Update alert status
+      await connection.execute(
+        'UPDATE alerts SET status = ? WHERE id = ?',
+        ['In Progress', alertId]
+      );
+
+      // Update assignment log
+      await connection.execute(
+        'UPDATE alert_assignments SET status = ? WHERE alert_id = ? AND responder_id = ? AND unassigned_at IS NULL',
+        ['accepted', alertId, responderId]
+      );
+
+      await connection.commit();
+
+      return { success: true, message: 'Alert assignment accepted' };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  },
+
+  // Complete an alert
+  async completeAlert(alertId: number, responderId: number) {
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Check if alert is assigned to this responder
+      const [alerts] = await connection.execute(
+        'SELECT responder_id, status FROM alerts WHERE id = ?',
+        [alertId]
+      );
+
+      if (alerts.length === 0) {
+        throw new Error('Alert not found');
+      }
+
+      if (alerts[0].responder_id !== responderId) {
+        throw new Error('Alert is not assigned to this responder');
+      }
+
+      // Update alert status
+      await connection.execute(
+        'UPDATE alerts SET status = ? WHERE id = ?',
+        ['Completed', alertId]
+      );
+
+      // Update responder status back to Available
+      await connection.execute(
+        'UPDATE responders SET status = ? WHERE id = ?',
+        ['Available', responderId]
+      );
+
+      // Update assignment log
+      await connection.execute(
+        'UPDATE alert_assignments SET status = ? WHERE alert_id = ? AND responder_id = ? AND unassigned_at IS NULL',
+        ['completed', alertId, responderId]
+      );
+
+      await connection.commit();
+
+      return { success: true, message: 'Alert completed successfully' };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
   },
 
   // Create new emergency alert
@@ -142,6 +395,33 @@ export const db = {
   async updateAlertStatus(alertId: number, status: string) {
     const sql = 'UPDATE alerts SET status = ? WHERE id = ?';
     return query(sql, [status, alertId]);
+  },
+
+  // Update alert status with responder assignment
+  async updateAlertStatusWithResponder(alertId: number, status: string, responderId: number) {
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Update alert with responder assignment and status
+      await connection.execute(
+        'UPDATE alerts SET status = ?, responder_id = ?, assigned_at = NOW() WHERE id = ?',
+        [status, responderId, alertId]
+      );
+
+      // Log the assignment in alert_assignments table
+      await connection.execute(
+        'INSERT INTO alert_assignments (alert_id, responder_id, status) VALUES (?, ?, ?)',
+        [alertId, responderId, status.toLowerCase()]
+      );
+
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
   },
 
   // GPS Tracking with enhanced error handling

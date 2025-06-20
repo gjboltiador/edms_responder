@@ -14,8 +14,8 @@ import { AddPatientInfoModal } from '@/components/reports/AddPatientInfoModal';
 import { EditPatientModal } from '@/components/reports/EditPatientModal';
 import { toast } from "@/components/ui/use-toast";
 
-export function ReportScreen({ selectedAlert }: ReportScreenProps) {
-  const [reportTab, setReportTab] = useState("incident");
+export function ReportScreen({ selectedAlert, setSelectedAlert }: ReportScreenProps) {
+  const [reportTab, setReportTab] = useState(selectedAlert ? "incident" : "completed");
   const [completedReports, setCompletedReports] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -23,6 +23,7 @@ export function ReportScreen({ selectedAlert }: ReportScreenProps) {
   const [isEditPatientModalOpen, setIsEditPatientModalOpen] = useState(false);
   const [patientsLoading, setPatientsLoading] = useState(false);
   const [isAddPatientInfoModalOpen, setIsAddPatientInfoModalOpen] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
   
   const {
     isAddPatientDialogOpen,
@@ -35,6 +36,11 @@ export function ReportScreen({ selectedAlert }: ReportScreenProps) {
   useEffect(() => {
     fetchCompletedReports();
   }, []);
+
+  useEffect(() => {
+    // Update the tab based on whether there's a selected alert
+    setReportTab(selectedAlert ? "incident" : "completed");
+  }, [selectedAlert]);
 
   useEffect(() => {
     if (selectedAlert) {
@@ -186,13 +192,75 @@ export function ReportScreen({ selectedAlert }: ReportScreenProps) {
     }
   };
 
+  const handleComplete = async () => {
+    if (!selectedAlert) return;
+    
+    setIsCompleting(true);
+    try {
+      const response = await fetch('/api/alerts', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          alertId: selectedAlert.id,
+          status: 'completed'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update alert status');
+      }
+
+      // Show success toast
+      toast({
+        title: "Alert Completed",
+        description: "The incident has been marked as completed.",
+      });
+
+      // Refresh the reports list
+      await fetchCompletedReports();
+      
+      // Switch to Completed Reports tab
+      setReportTab("completed");
+      
+      // Refresh the page after a short delay to ensure all data is updated
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (error) {
+      console.error('Error completing alert:', error);
+      toast({
+        title: "Error",
+        description: "Failed to complete the incident. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>ERT Reports</CardTitle>
-        <CardDescription>
-          View and submit incident reports
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>ERT Reports</CardTitle>
+            <CardDescription>
+              View and submit incident reports
+            </CardDescription>
+          </div>
+          {selectedAlert && patients.length > 0 && (
+            <Button 
+              variant="default" 
+              className="bg-black hover:bg-black/90"
+              onClick={handleComplete}
+              disabled={isCompleting}
+            >
+              {isCompleting ? "Completing..." : "Complete"}
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="pb-12">
         <Tabs value={reportTab} onValueChange={handleReportTabChange} className="w-full">
@@ -228,6 +296,20 @@ export function ReportScreen({ selectedAlert }: ReportScreenProps) {
                         <span className="text-sm font-medium min-w-[80px] pt-0.5">Description:</span>
                         <span className="text-sm text-muted-foreground">{selectedAlert.description}</span>
                       </div>
+                      {selectedAlert.responder_name && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium min-w-[80px]">Responder:</span>
+                          <div className="flex items-center gap-1">
+                            <User className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">{selectedAlert.responder_name}</span>
+                            {selectedAlert.assigned_at && (
+                              <span className="text-xs text-muted-foreground ml-2">
+                                • Assigned {new Date(selectedAlert.assigned_at).toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium min-w-[80px]">Severity:</span>
                         <Badge variant={selectedAlert.severity === 'high' ? 'destructive' : 'default'} className="px-2 py-0.5 text-xs font-semibold">
@@ -303,38 +385,80 @@ export function ReportScreen({ selectedAlert }: ReportScreenProps) {
                 </div>
               ) : (
                 completedReports.map((report) => (
-                  <div 
-                    key={report.id}
-                    className="bg-white rounded-2xl p-4 shadow-sm"
-                  >
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-start gap-2">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-base font-semibold text-slate-900 truncate">{report.type}</h3>
+                  <Card key={report.id} className="overflow-hidden">
+                    <CardContent className="p-4">
+                      <div className="space-y-4">
+                        {/* Header with Type and Status */}
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="text-lg font-semibold text-slate-900">{report.type}</h3>
+                            <p className="text-sm text-slate-500 mt-1">
+                              Reported {new Date(report.created_at).toLocaleString()}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className={`${getSeverityColor(report.severity)} px-2.5 py-0.5 text-xs rounded-full`}>
+                              {report.severity}
+                            </Badge>
+                            <Badge 
+                              variant="outline" 
+                              className="text-xs px-2 py-0.5 border text-emerald-600 border-emerald-200"
+                            >
+                              {report.status}
+                            </Badge>
+                          </div>
                         </div>
-                        <Badge className={`${getSeverityColor(report.severity)} px-2.5 py-0.5 text-xs rounded-full flex-shrink-0`}>
-                          {report.severity}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-slate-500">
-                        <MapPin className="h-4 w-4" />
-                        <span className="text-sm truncate">{report.location}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                          <Clock className="h-3.5 w-3.5" />
-                          <span>{new Date(report.created_at).toLocaleString()}</span>
+
+                        {/* Location */}
+                        <div className="flex items-start gap-2">
+                          <MapPin className="h-4 w-4 text-slate-500 mt-0.5" />
+                          <div>
+                            <span className="text-sm font-medium text-slate-700">Location</span>
+                            <p className="text-sm text-slate-600 mt-0.5">{report.location}</p>
+                          </div>
                         </div>
-                        <Badge 
-                          variant="outline" 
-                          className="text-xs px-2 py-0.5 border text-emerald-600 border-emerald-200"
-                        >
-                          {report.status}
-                        </Badge>
+
+                        {/* Description */}
+                        <div>
+                          <span className="text-sm font-medium text-slate-700">Description</span>
+                          <p className="text-sm text-slate-600 mt-1">{report.description}</p>
+                        </div>
+
+                        {/* Responder Information */}
+                        {report.responder_name && (
+                          <div className="flex items-start gap-2">
+                            <User className="h-4 w-4 text-slate-500 mt-0.5" />
+                            <div>
+                              <span className="text-sm font-medium text-slate-700">Responder</span>
+                              <p className="text-sm text-slate-600 mt-0.5">
+                                {report.responder_name}
+                                {report.assigned_at && (
+                                  <span className="text-xs text-slate-500 ml-2">
+                                    • Assigned {new Date(report.assigned_at).toLocaleString()}
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* View Patients Button */}
+                        <div className="flex justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs"
+                            onClick={() => {
+                              setSelectedAlert(report);
+                              setReportTab("incident");
+                            }}
+                          >
+                            View Patients
+                          </Button>
+                        </div>
                       </div>
-                      <p className="text-sm text-slate-600 mt-2">{report.description}</p>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 ))
               )}
             </div>

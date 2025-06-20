@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,6 +19,11 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,6 +58,43 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     }
   }
 
+  // Don't render form until client-side to prevent hydration mismatches
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col">
+        <header className="bg-red-600 text-white p-4 shadow-md">
+          <h1 className="text-xl font-bold text-center">EDMS Responder</h1>
+        </header>
+
+        <main className="flex-1 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
+              <CardDescription className="text-center">
+                Enter your credentials to access the EDMS Responder system
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <div className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 animate-pulse bg-gray-200"></div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 animate-pulse bg-gray-200"></div>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <div className="w-full h-10 bg-gray-200 rounded-md animate-pulse"></div>
+            </CardFooter>
+          </Card>
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <header className="bg-red-600 text-white p-4 shadow-md">
@@ -84,6 +126,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   disabled={isLoading}
+                  autoComplete="username"
                 />
               </div>
               <div className="space-y-2">
@@ -95,6 +138,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
+                  autoComplete="current-password"
                 />
               </div>
             </form>
@@ -104,6 +148,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
               className="w-full bg-red-600 hover:bg-red-700" 
               onClick={handleSubmit} 
               disabled={isLoading}
+              type="submit"
             >
               {isLoading ? "Logging in..." : "Login"}
             </Button>

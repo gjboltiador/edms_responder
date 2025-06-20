@@ -179,19 +179,24 @@ export default function EmergencyResponderApp() {
       <main className="flex-1 container max-w-md mx-auto p-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsContent value="home">
-            <HomeScreen />
+            <HomeScreen 
+              userName={user?.username || user?.firstname || "User"} 
+              user={user}
+              onNavigate={navigateToTab}
+            />
           </TabsContent>
           <TabsContent value="dispatch">
             <DispatchAlertScreen 
               setActiveTab={setActiveTab} 
-              setSelectedAlert={setSelectedAlert} 
+              setSelectedAlert={setSelectedAlert}
+              user={user}
             />
           </TabsContent>
           <TabsContent value="settings">
-            <SettingsScreen />
+            <SettingsScreen user={user} />
           </TabsContent>
           <TabsContent value="report">
-            <ReportScreen selectedAlert={selectedAlert} />
+            <ReportScreen selectedAlert={selectedAlert} setSelectedAlert={setSelectedAlert} />
           </TabsContent>
           <TabsList className="fixed bottom-0 left-0 right-0 h-16 grid grid-cols-4 bg-white border-t border-gray-200">
             <TabsTrigger

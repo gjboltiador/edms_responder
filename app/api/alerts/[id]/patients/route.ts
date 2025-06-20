@@ -3,12 +3,13 @@ import { db } from '@/lib/db';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('API: Fetching patients for alert ID:', params.id);
+    const { id } = await params;
+    console.log('API: Fetching patients for alert ID:', id);
     
-    if (!params.id) {
+    if (!id) {
       console.error('API: Alert ID is missing');
       return NextResponse.json(
         { error: 'Alert ID is required' },
@@ -16,9 +17,9 @@ export async function GET(
       );
     }
 
-    const incidentId = parseInt(params.id);
+    const incidentId = parseInt(id);
     if (isNaN(incidentId)) {
-      console.error('API: Invalid alert ID format:', params.id);
+      console.error('API: Invalid alert ID format:', id);
       return NextResponse.json(
         { error: 'Invalid alert ID format' },
         { status: 400 }

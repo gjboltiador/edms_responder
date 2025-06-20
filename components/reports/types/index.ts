@@ -10,10 +10,15 @@ export interface Alert {
   created_at: string;
   latitude: number;
   longitude: number;
+  responder_id?: number;
+  responder_name?: string;
+  responder_username?: string;
+  assigned_at?: string;
 }
 
 export type Patient = BasePatient;
 
 export interface ReportScreenProps {
   selectedAlert: Alert | null;
+  setSelectedAlert: (alert: Alert | null) => void;
 } 
