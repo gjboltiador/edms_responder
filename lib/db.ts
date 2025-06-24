@@ -28,10 +28,10 @@ interface GpsData {
 };*/
 
 const dbConfig = {
-  host: 'sql12.freesqldatabase.com',
-  user: 'sql12785202',
-  password: 'IGkaKLGJxR',
-  database: 'sql12785202',
+  host: '34.95.212.100',
+  user: 'edms-responder',
+  password: 'EDMS@dm1n',
+  database: 'edms',
   port: 3306,
   waitForConnections: true,
   connectionLimit: 10,
