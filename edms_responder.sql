@@ -1,0 +1,482 @@
+-- --------------------------------------------------------
+-- Host:                         sql12.freesqldatabase.com
+-- Server version:               5.5.62-0ubuntu0.14.04.1 - (Ubuntu)
+-- Server OS:                    debian-linux-gnu
+-- HeidiSQL Version:             12.10.0.7000
+-- --------------------------------------------------------
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET NAMES utf8 */;
+/*!50503 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+
+-- Dumping database structure for sql12785202
+CREATE DATABASE IF NOT EXISTS `sql12785202` /*!40100 DEFAULT CHARACTER SET latin1 */;
+USE `sql12785202`;
+
+-- Dumping structure for table sql12785202.alerts
+CREATE TABLE IF NOT EXISTS `alerts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `type` varchar(50) NOT NULL,
+  `location` varchar(255) NOT NULL,
+  `latitude` decimal(10,8) DEFAULT NULL,
+  `longitude` decimal(11,8) DEFAULT NULL,
+  `description` text,
+  `severity` varchar(20) NOT NULL,
+  `status` varchar(20) DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `responder_id` int(11) DEFAULT NULL,
+  `assigned_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_alerts_responder` (`responder_id`),
+  KEY `idx_alerts_status` (`status`),
+  CONSTRAINT `alerts_ibfk_1` FOREIGN KEY (`responder_id`) REFERENCES `responders` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4;
+
+-- Dumping data for table sql12785202.alerts: ~6 rows (approximately)
+INSERT INTO `alerts` (`id`, `type`, `location`, `latitude`, `longitude`, `description`, `severity`, `status`, `created_at`, `updated_at`, `responder_id`, `assigned_at`) VALUES
+	(17, 'Fire Emergency', '123 Main St, Bayawan City', 9.36470000, 122.80470000, 'Large fire reported at residential building. Multiple units affected.', 'High', 'Completed', '2025-06-17 03:31:15', NULL, 1, '2025-06-20 03:08:50'),
+	(18, 'Medical Emergency', '456 Santos Ave, Bayawan City', 9.36500000, 122.80500000, 'Elderly patient with severe chest pain. Requires immediate assistance.', 'High', 'Declined', '2025-06-17 03:31:15', NULL, 1, '2025-06-20 02:59:50'),
+	(19, 'Traffic Accident', 'National Highway, Bayawan City', 9.36550000, 122.80550000, 'Multi-vehicle collision. Minor injuries reported.', 'Medium', 'Completed', '2025-06-17 03:31:15', NULL, 1, '2025-06-20 03:08:50'),
+	(20, 'Natural Disaster', 'Coastal Area, Bayawan City', 9.36600000, 122.80600000, 'Flooding reported due to heavy rainfall. Several homes affected.', 'High', 'Assigned', '2025-06-17 03:31:15', NULL, 2, '2025-06-20 02:28:49'),
+	(21, 'Public Disturbance', 'Central Market, Bayawan City', 9.36650000, 122.80650000, 'Crowd control needed. Large gathering causing safety concerns.', 'Low', 'accepted', '2025-06-17 03:31:15', NULL, 1, '2025-06-20 02:59:50'),
+	(22, 'Test Emergency', 'Test Location, Bayawan City', 9.36550000, 122.80490000, 'This is a test emergency for UI testing', 'medium', 'completed', '2025-06-20 02:59:50', NULL, 1, '2025-06-20 03:02:47'),
+	(23, 'Test Completed Emergency', 'Test Location, Bayawan City', 9.36550000, 122.80490000, 'This is a test completed emergency for ERT Reports testing', 'medium', 'Completed', '2025-06-20 03:08:20', NULL, 1, '2025-06-20 03:08:20'),
+	(24, 'ERT Test Emergency', 'ERT Test Location, Bayawan City', 9.36550000, 122.80490000, 'This is a test emergency for ERT Reports responder display testing. This alert should show the assigned responder in the completed reports section.', 'high', 'Completed', '2025-06-20 03:09:41', NULL, 1, '2025-06-20 03:09:41');
+
+-- Dumping structure for table sql12785202.alert_assignments
+CREATE TABLE IF NOT EXISTS `alert_assignments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `alert_id` int(11) NOT NULL,
+  `responder_id` int(11) NOT NULL,
+  `assigned_by` int(11) DEFAULT NULL,
+  `assigned_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `unassigned_at` timestamp NULL DEFAULT NULL,
+  `status` enum('assigned','accepted','rejected','completed','unassigned') DEFAULT 'assigned',
+  `notes` text,
+  PRIMARY KEY (`id`),
+  KEY `assigned_by` (`assigned_by`),
+  KEY `idx_alert_assignments_alert` (`alert_id`),
+  KEY `idx_alert_assignments_responder` (`responder_id`),
+  CONSTRAINT `alert_assignments_ibfk_1` FOREIGN KEY (`alert_id`) REFERENCES `alerts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `alert_assignments_ibfk_2` FOREIGN KEY (`responder_id`) REFERENCES `responders` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `alert_assignments_ibfk_3` FOREIGN KEY (`assigned_by`) REFERENCES `responders` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=latin1;
+
+-- Dumping data for table sql12785202.alert_assignments: ~1 rows (approximately)
+INSERT INTO `alert_assignments` (`id`, `alert_id`, `responder_id`, `assigned_by`, `assigned_at`, `unassigned_at`, `status`, `notes`) VALUES
+	(1, 20, 2, NULL, '2025-06-20 02:28:49', NULL, 'assigned', NULL),
+	(2, 18, 1, NULL, '2025-06-20 02:59:50', NULL, '', NULL),
+	(3, 21, 1, NULL, '2025-06-20 02:59:50', NULL, 'accepted', NULL),
+	(4, 22, 1, NULL, '2025-06-20 03:02:47', NULL, 'accepted', NULL),
+	(5, 17, 1, NULL, '2025-06-20 03:08:50', NULL, 'completed', NULL),
+	(6, 19, 1, NULL, '2025-06-20 03:08:50', NULL, 'completed', NULL);
+
+-- Dumping structure for table sql12785202.gps_data
+CREATE TABLE IF NOT EXISTS `gps_data` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `dispatch_id` int(11) NOT NULL,
+  `latlng` varchar(255) DEFAULT NULL,
+  `lat` varchar(255) DEFAULT NULL,
+  `lng` varchar(255) DEFAULT NULL,
+  `created_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `ix_dispatch_id` (`dispatch_id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=154 DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC;
+
+-- Dumping data for table sql12785202.gps_data: ~119 rows (approximately)
+INSERT INTO `gps_data` (`id`, `dispatch_id`, `latlng`, `lat`, `lng`, `created_date`) VALUES
+	(30, 17, '10.3099,123.893', '10.3099', '123.893', '2025-06-17 03:41:04'),
+	(31, 19, '10.332267875,123.90818', '10.332267875', '123.90818', '2025-06-17 05:41:04'),
+	(32, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:41:34'),
+	(33, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:42:04'),
+	(34, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:42:33'),
+	(35, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:43:03'),
+	(36, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:43:33'),
+	(37, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:44:03'),
+	(38, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:44:32'),
+	(39, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:45:02'),
+	(40, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:45:31'),
+	(41, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:46:02'),
+	(42, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:46:32'),
+	(43, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:47:03'),
+	(44, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:47:33'),
+	(45, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:48:03'),
+	(46, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:48:33'),
+	(47, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:48:59'),
+	(48, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:49:31'),
+	(49, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:49:59'),
+	(50, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:50:31'),
+	(51, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:51:03'),
+	(52, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:51:29'),
+	(53, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:52:01'),
+	(54, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:52:33'),
+	(55, 19, '10.3322489,123.90818', '10.3322489', '123.90818', '2025-06-17 05:53:01'),
+	(56, 19, '10.3322489,123.90818', '10.3322489', '123.90818', '2025-06-17 05:53:33'),
+	(57, 19, '10.3322489,123.90818', '10.3322489', '123.90818', '2025-06-17 05:53:59'),
+	(58, 19, '10.3322489,123.90818', '10.3322489', '123.90818', '2025-06-17 05:54:33'),
+	(59, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:55:03'),
+	(60, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:55:33'),
+	(61, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:56:03'),
+	(62, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:56:32'),
+	(63, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:57:02'),
+	(64, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:57:31'),
+	(65, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:58:02'),
+	(66, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 05:58:32'),
+	(67, 19, '10.332267875,123.90818', '10.332267875', '123.90818', '2025-06-17 06:53:56'),
+	(68, 19, '10.332267875,123.90818', '10.332267875', '123.90818', '2025-06-17 06:53:57'),
+	(69, 19, '10.332267875,123.90818', '10.332267875', '123.90818', '2025-06-17 06:53:57'),
+	(70, 19, '10.332267875,123.90818', '10.332267875', '123.90818', '2025-06-17 06:53:59'),
+	(71, 19, '10.332267875,123.90818', '10.332267875', '123.90818', '2025-06-17 06:54:00'),
+	(72, 19, '10.332267875,123.90818', '10.332267875', '123.90818', '2025-06-17 06:54:00'),
+	(73, 19, '10.332267875,123.90818', '10.332267875', '123.90818', '2025-06-17 06:54:00'),
+	(74, 19, '10.332267875,123.90818', '10.332267875', '123.90818', '2025-06-17 06:54:00'),
+	(75, 19, '10.332267875,123.90818', '10.332267875', '123.90818', '2025-06-17 06:54:00'),
+	(76, 19, '10.332267875,123.90818', '10.332267875', '123.90818', '2025-06-17 06:54:00'),
+	(77, 19, '10.332250799999999,123.90818', '10.332250799999999', '123.90818', '2025-06-17 07:19:02'),
+	(78, 19, '10.332250799999999,123.90818', '10.332250799999999', '123.90818', '2025-06-17 07:19:02'),
+	(79, 19, '10.332250799999999,123.90818', '10.332250799999999', '123.90818', '2025-06-17 07:19:03'),
+	(80, 19, '10.332250799999999,123.90818', '10.332250799999999', '123.90818', '2025-06-17 07:19:04'),
+	(81, 19, '10.332250799999999,123.90818', '10.332250799999999', '123.90818', '2025-06-17 07:19:05'),
+	(82, 19, '10.332250799999999,123.90818', '10.332250799999999', '123.90818', '2025-06-17 07:19:05'),
+	(83, 19, '10.332250799999999,123.90818', '10.332250799999999', '123.90818', '2025-06-17 07:19:05'),
+	(84, 19, '10.332250799999999,123.90818', '10.332250799999999', '123.90818', '2025-06-17 07:19:05'),
+	(85, 19, '10.332250799999999,123.90818', '10.332250799999999', '123.90818', '2025-06-17 07:19:05'),
+	(86, 19, '10.332250799999999,123.90818', '10.332250799999999', '123.90818', '2025-06-17 07:19:05'),
+	(87, 19, '10.332250799999999,123.90818', '10.332250799999999', '123.90818', '2025-06-17 07:19:05'),
+	(88, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 07:58:29'),
+	(89, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 07:58:30'),
+	(90, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 07:58:30'),
+	(91, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 07:58:33'),
+	(92, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 07:58:33'),
+	(93, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 07:58:33'),
+	(94, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 07:58:33'),
+	(95, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 07:58:33'),
+	(96, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 07:58:33'),
+	(97, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 07:59:04'),
+	(98, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 07:59:33'),
+	(99, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:00:01'),
+	(100, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:00:33'),
+	(101, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:01:03'),
+	(102, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:01:33'),
+	(103, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:02:02'),
+	(104, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:02:33'),
+	(105, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:03:03'),
+	(106, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:03:33'),
+	(107, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:04:03'),
+	(108, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:04:33'),
+	(109, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:05:03'),
+	(110, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:05:32'),
+	(111, 19, '10.3322489,123.90818', '10.3322489', '123.90818', '2025-06-17 08:06:03'),
+	(112, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:06:32'),
+	(113, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:07:02'),
+	(114, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:07:33'),
+	(115, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:08:03'),
+	(116, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:08:33'),
+	(117, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:08:59'),
+	(118, 19, '10.3322489,123.90818', '10.3322489', '123.90818', '2025-06-17 08:09:31'),
+	(119, 19, '10.3322489,123.90818', '10.3322489', '123.90818', '2025-06-17 08:10:03'),
+	(120, 19, '10.3322489,123.90818', '10.3322489', '123.90818', '2025-06-17 08:10:29'),
+	(121, 19, '10.3322489,123.90818', '10.3322489', '123.90818', '2025-06-17 08:11:02'),
+	(122, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:11:33'),
+	(123, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:12:01'),
+	(124, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:12:32'),
+	(125, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:13:03'),
+	(126, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:13:33'),
+	(127, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:13:59'),
+	(128, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:14:33'),
+	(129, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:15:02'),
+	(130, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:15:32'),
+	(131, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:16:03'),
+	(132, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:16:32'),
+	(133, 19, '10.3322489,123.90818', '10.3322489', '123.90818', '2025-06-17 08:17:02'),
+	(134, 19, '10.3322489,123.90818', '10.3322489', '123.90818', '2025-06-17 08:17:32'),
+	(135, 19, '10.3322489,123.90818', '10.3322489', '123.90818', '2025-06-17 08:18:01'),
+	(136, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:18:31'),
+	(137, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:18:59'),
+	(138, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:19:31'),
+	(139, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:19:59'),
+	(140, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:20:33'),
+	(141, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:20:59'),
+	(142, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:21:32'),
+	(143, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:22:01'),
+	(144, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:22:31'),
+	(145, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:23:03'),
+	(146, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:23:33'),
+	(147, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:24:40'),
+	(148, 19, '10.332254416666666,123.90817999999999', '10.332254416666666', '123.90817999999999', '2025-06-17 08:24:40'),
+	(149, 21, '9.3454336,122.8505088', '9.3454336', '122.8505088', '2025-06-20 02:52:11'),
+	(150, 21, '9.3454336,122.8505088', '9.3454336', '122.8505088', '2025-06-20 02:53:07'),
+	(151, 21, '9.3454336,122.8505088', '9.3454336', '122.8505088', '2025-06-20 02:53:09'),
+	(152, 22, '9.3454336,122.8505088', '9.3454336', '122.8505088', '2025-06-20 03:02:49'),
+	(153, 22, '9.3454336,122.8505088', '9.3454336', '122.8505088', '2025-06-20 03:03:19');
+
+-- Dumping structure for table sql12785202.patients
+CREATE TABLE IF NOT EXISTS `patients` (
+  `id` varchar(36) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `age` varchar(10) NOT NULL,
+  `gender` varchar(10) NOT NULL,
+  `address` text NOT NULL,
+  `contact_number` varchar(20) NOT NULL,
+  `contact_person` varchar(100) NOT NULL,
+  `incident_id` int(11) DEFAULT NULL,
+  `incident_type` varchar(50) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `incident_id` (`incident_id`) USING BTREE,
+  CONSTRAINT `patients_ibfk_1` FOREIGN KEY (`incident_id`) REFERENCES `alerts` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Dumping data for table sql12785202.patients: ~3 rows (approximately)
+INSERT INTO `patients` (`id`, `name`, `age`, `gender`, `address`, `contact_number`, `contact_person`, `incident_id`, `incident_type`, `created_at`, `updated_at`) VALUES
+	('23c8c332-3adb-478f-ab4e-588e8e31e0ec', 'Godfrey Jeno Boltiador', '26', 'male', 'Porong, Diao St. Tinago', '09758574430', 'Godfrey Jeno Boltiador', 19, NULL, '2025-06-20 02:16:29', NULL),
+	('a7131409-0b9c-4af5-ab2e-bc2643ab1a76', 'Godfrey Boltiador', '45', 'male', 'Porong, Diao St. Tinago', '09362052061', 'Godfrey Jeno Boltiador', 22, NULL, '2025-06-20 03:19:45', NULL),
+	('abaa1ef4-2735-44f3-8fa4-8dcdb9097494', 'Baltimor Baltasar', '56', 'male', 'Caranoche, Sta. Catalina', '09990477880', 'Juan Dela Cruz', 17, NULL, '2025-06-17 03:41:39', NULL),
+	('e05e6fc4-b858-419c-a52b-23bed833ddc8', 'Rambals', '56', 'male', 'Caranoche, Sta. Catalina', '09990477880', 'Juan Dela Cruz', 17, NULL, '2025-06-17 03:42:28', '2025-06-16 21:22:43');
+
+-- Dumping structure for table sql12785202.patient_diagnostics
+CREATE TABLE IF NOT EXISTS `patient_diagnostics` (
+  `id` varchar(36) NOT NULL,
+  `patient_id` varchar(36) DEFAULT NULL,
+  `chief_complaint` text,
+  `pertinent_symptoms` text,
+  `allergies` text,
+  `current_medications` text,
+  `past_medical_history` text,
+  `last_oral_intake` text,
+  `history_of_present_illness` text,
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `patient_id` (`patient_id`) USING BTREE,
+  CONSTRAINT `patient_diagnostics_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Dumping data for table sql12785202.patient_diagnostics: ~3 rows (approximately)
+INSERT INTO `patient_diagnostics` (`id`, `patient_id`, `chief_complaint`, `pertinent_symptoms`, `allergies`, `current_medications`, `past_medical_history`, `last_oral_intake`, `history_of_present_illness`) VALUES
+	('0144c402-4b2d-11f0-a109-062bff1cb1bf', 'abaa1ef4-2735-44f3-8fa4-8dcdb9097494', 'sakit ang dughan', 'wala naka inom tuba', 'No Allergies', 'medicol', 'Allergy monggos', 'No oral intake', 'unable to breath'),
+	('1e2e448f-4b2d-11f0-a109-062bff1cb1bf', 'e05e6fc4-b858-419c-a52b-23bed833ddc8', 'sakit ang dughan', 'wala naka inom tuba', 'No Allergies', 'medicol', 'Allergy monggos', 'No oral intake', 'unable to breath'),
+	('7ba25aae-4d85-11f0-a109-062bff1cb1bf', 'a7131409-0b9c-4af5-ab2e-bc2643ab1a76', 'gh', 'gh', 'jgh', 'gh', 'ghjgh', 'ghj', 'hgj'),
+	('a8706fb5-4d7c-11f0-a109-062bff1cb1bf', '23c8c332-3adb-478f-ab4e-588e8e31e0ec', 'gh', 'gh', 'jgh', 'gh', 'ghjgh', 'ghj', 'hgj');
+
+-- Dumping structure for table sql12785202.patient_trauma
+CREATE TABLE IF NOT EXISTS `patient_trauma` (
+  `id` varchar(36) NOT NULL,
+  `patient_id` varchar(36) DEFAULT NULL,
+  `cause_of_injuries` text,
+  `types_of_injuries` text,
+  `location_of_incident` text,
+  `remarks` text,
+  `conscious` tinyint(1) DEFAULT '0',
+  `unconscious` tinyint(1) DEFAULT '0',
+  `deceased` tinyint(1) DEFAULT '0',
+  `verbal` tinyint(1) DEFAULT '0',
+  `pain` tinyint(1) DEFAULT '0',
+  `alert` tinyint(1) DEFAULT '0',
+  `lethargic` tinyint(1) DEFAULT '0',
+  `obtunded` tinyint(1) DEFAULT '0',
+  `stupor` tinyint(1) DEFAULT '0',
+  `first_aid_dressing` tinyint(1) DEFAULT '0',
+  `splinting` tinyint(1) DEFAULT '0',
+  `ambu_bagging` tinyint(1) DEFAULT '0',
+  `oxygen_therapy` tinyint(1) DEFAULT '0',
+  `oxygen_liters_per_min` varchar(10) DEFAULT NULL,
+  `cpr` tinyint(1) DEFAULT '0',
+  `cpr_started` time DEFAULT NULL,
+  `cpr_ended` time DEFAULT NULL,
+  `aed` tinyint(1) DEFAULT '0',
+  `medications_given` tinyint(1) DEFAULT '0',
+  `medications_specify` text,
+  `others` tinyint(1) DEFAULT '0',
+  `others_specify` text,
+  `head_immobilization` tinyint(1) DEFAULT '0',
+  `control_bleeding` tinyint(1) DEFAULT '0',
+  `ked` tinyint(1) DEFAULT '0',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `patient_id` (`patient_id`) USING BTREE,
+  CONSTRAINT `patient_trauma_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Dumping data for table sql12785202.patient_trauma: ~3 rows (approximately)
+INSERT INTO `patient_trauma` (`id`, `patient_id`, `cause_of_injuries`, `types_of_injuries`, `location_of_incident`, `remarks`, `conscious`, `unconscious`, `deceased`, `verbal`, `pain`, `alert`, `lethargic`, `obtunded`, `stupor`, `first_aid_dressing`, `splinting`, `ambu_bagging`, `oxygen_therapy`, `oxygen_liters_per_min`, `cpr`, `cpr_started`, `cpr_ended`, `aed`, `medications_given`, `medications_specify`, `others`, `others_specify`, `head_immobilization`, `control_bleeding`, `ked`, `created_at`, `updated_at`) VALUES
+	('0e00f529-4e38-4a81-a886-69a3abb5f684', 'e05e6fc4-b858-419c-a52b-23bed833ddc8', NULL, NULL, NULL, NULL, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 'N/A', 0, '00:00:00', '00:00:00', 0, 0, '', 0, '', 0, 0, 1, '2025-06-17 03:42:28', '2025-06-16 19:42:53'),
+	('39033025-ce55-4653-9fbd-c9435111be54', '23c8c332-3adb-478f-ab4e-588e8e31e0ec', '58', '58', '58', NULL, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, NULL, 0, NULL, NULL, 0, 0, NULL, 0, NULL, 0, 0, 0, '2025-06-20 02:16:30', '2025-06-19 18:17:22'),
+	('6788d13d-c7cb-4bd3-b3e7-13b720156d48', 'abaa1ef4-2735-44f3-8fa4-8dcdb9097494', 'No Cause of injuries', 'Fire burnt', 'same as incident location', NULL, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, NULL, 0, NULL, NULL, 1, 0, NULL, 0, NULL, 0, 0, 0, '2025-06-17 03:41:39', '2025-06-16 19:42:05'),
+	('82ac790a-8e4a-4ea7-979a-cbb87effefdd', 'a7131409-0b9c-4af5-ab2e-bc2643ab1a76', '58', '58', '58', NULL, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, NULL, 0, NULL, NULL, 0, 0, NULL, 0, NULL, 0, 0, 0, '2025-06-20 03:19:45', '2025-06-19 19:20:33');
+
+-- Dumping structure for table sql12785202.patient_vital_signs
+CREATE TABLE IF NOT EXISTS `patient_vital_signs` (
+  `id` varchar(36) NOT NULL,
+  `patient_id` varchar(36) DEFAULT NULL,
+  `blood_pressure` varchar(20) DEFAULT NULL,
+  `pulse_rate` varchar(10) DEFAULT NULL,
+  `respiratory_rate` varchar(10) DEFAULT NULL,
+  `temperature` varchar(10) DEFAULT NULL,
+  `oxygen_saturation` varchar(10) DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `patient_id` (`patient_id`) USING BTREE,
+  CONSTRAINT `patient_vital_signs_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Dumping data for table sql12785202.patient_vital_signs: ~3 rows (approximately)
+INSERT INTO `patient_vital_signs` (`id`, `patient_id`, `blood_pressure`, `pulse_rate`, `respiratory_rate`, `temperature`, `oxygen_saturation`) VALUES
+	('01360057-4b2d-11f0-a109-062bff1cb1bf', 'abaa1ef4-2735-44f3-8fa4-8dcdb9097494', '91', '70', '50', '37', '56'),
+	('1e1fdf6c-4b2d-11f0-a109-062bff1cb1bf', 'e05e6fc4-b858-419c-a52b-23bed833ddc8', '91', '70', '50', '37', '56'),
+	('7b9362aa-4d85-11f0-a109-062bff1cb1bf', 'a7131409-0b9c-4af5-ab2e-bc2643ab1a76', '69', '69', '96', '58', '58'),
+	('a8616287-4d7c-11f0-a109-062bff1cb1bf', '23c8c332-3adb-478f-ab4e-588e8e31e0ec', '69', '69', '96', '58', '58');
+
+-- Dumping structure for table sql12785202.responders
+CREATE TABLE IF NOT EXISTS `responders` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(50) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `contact_number` varchar(20) DEFAULT NULL,
+  `status` varchar(20) DEFAULT 'available',
+  `last_active` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `user_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `username` (`username`) USING BTREE,
+  KEY `fk_user_id` (`user_id`),
+  CONSTRAINT `fk_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+
+-- Dumping data for table sql12785202.responders: ~2 rows (approximately)
+INSERT INTO `responders` (`id`, `username`, `name`, `contact_number`, `status`, `last_active`, `user_id`) VALUES
+	(1, 'test_responder', 'Test Responder', '+1234567890', 'Available', '2025-06-20 05:40:05', 5),
+	(2, 'test_responder_1750383701573', 'Test Responder', '+1234567890', 'Available', '2025-06-20 02:54:11', 4);
+
+-- Dumping structure for table sql12785202.responder_locations
+CREATE TABLE IF NOT EXISTS `responder_locations` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `responder_id` int(11) NOT NULL,
+  `latitude` decimal(10,8) NOT NULL,
+  `longitude` decimal(11,8) NOT NULL,
+  `accuracy` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `responder_id` (`responder_id`),
+  CONSTRAINT `responder_locations_ibfk_1` FOREIGN KEY (`responder_id`) REFERENCES `responders` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=73 DEFAULT CHARSET=latin1;
+
+-- Dumping data for table sql12785202.responder_locations: ~4 rows (approximately)
+INSERT INTO `responder_locations` (`id`, `responder_id`, `latitude`, `longitude`, `accuracy`, `created_at`) VALUES
+	(2, 1, 14.59950000, 120.98420000, 10, '2025-06-20 01:51:43'),
+	(3, 2, 9.34543360, 122.85050880, 123399, '2025-06-20 02:49:13'),
+	(4, 2, 9.34543360, 122.85050880, 123399, '2025-06-20 02:49:13'),
+	(5, 2, 9.34543360, 122.85050880, 123399, '2025-06-20 02:49:18'),
+	(6, 2, 9.34543360, 122.85050880, 123399, '2025-06-20 02:53:39'),
+	(7, 2, 9.34543360, 122.85050880, 123399, '2025-06-20 02:53:39'),
+	(8, 2, 9.34543360, 122.85050880, 123399, '2025-06-20 02:53:39'),
+	(9, 2, 9.34543360, 122.85050880, 123399, '2025-06-20 02:53:39'),
+	(10, 2, 9.34543360, 122.85050880, 123399, '2025-06-20 02:54:09'),
+	(11, 2, 9.34543360, 122.85050880, 123399, '2025-06-20 02:54:11'),
+	(12, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:02:03'),
+	(13, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:02:15'),
+	(14, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:10:53'),
+	(15, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:10:53'),
+	(16, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:10:53'),
+	(17, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:10:56'),
+	(18, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:14:10'),
+	(19, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:14:14'),
+	(20, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:14:27'),
+	(21, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:14:29'),
+	(22, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:17:58'),
+	(23, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:18:29'),
+	(24, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:18:39'),
+	(25, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:18:39'),
+	(26, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:18:40'),
+	(27, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:18:53'),
+	(28, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:21:53'),
+	(29, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:21:53'),
+	(30, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:21:56'),
+	(31, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:23:48'),
+	(32, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:23:48'),
+	(33, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:23:52'),
+	(34, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:29:54'),
+	(35, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:29:54'),
+	(36, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:30:06'),
+	(37, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:30:39'),
+	(38, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:30:54'),
+	(39, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:36:57'),
+	(40, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:37:00'),
+	(41, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:41:41'),
+	(42, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:41:41'),
+	(43, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:41:41'),
+	(44, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:41:42'),
+	(45, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:56:37'),
+	(46, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:56:39'),
+	(47, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:57:55'),
+	(48, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:57:55'),
+	(49, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:57:56'),
+	(50, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 03:58:14'),
+	(51, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:26:44'),
+	(52, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:27:13'),
+	(53, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:27:15'),
+	(54, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:27:20'),
+	(55, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:27:44'),
+	(56, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:28:13'),
+	(57, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:28:43'),
+	(58, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:29:13'),
+	(59, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:29:43'),
+	(60, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:30:13'),
+	(61, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:30:43'),
+	(62, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:31:13'),
+	(63, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:31:43'),
+	(64, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:32:13'),
+	(65, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:33:06'),
+	(66, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:34:06'),
+	(67, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:35:06'),
+	(68, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:36:06'),
+	(69, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:37:06'),
+	(70, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:38:06'),
+	(71, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:39:06'),
+	(72, 1, 9.34543360, 122.85050880, 123399, '2025-06-20 05:40:06');
+
+-- Dumping structure for table sql12785202.response_logs
+CREATE TABLE IF NOT EXISTS `response_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `alert_id` int(11) DEFAULT NULL,
+  `responder_id` int(11) DEFAULT NULL,
+  `action` varchar(50) NOT NULL,
+  `notes` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `alert_id` (`alert_id`) USING BTREE,
+  KEY `responder_id` (`responder_id`) USING BTREE,
+  CONSTRAINT `response_logs_ibfk_1` FOREIGN KEY (`alert_id`) REFERENCES `alerts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `response_logs_ibfk_2` FOREIGN KEY (`responder_id`) REFERENCES `responders` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Dumping data for table sql12785202.response_logs: ~0 rows (approximately)
+
+-- Dumping structure for table sql12785202.users
+CREATE TABLE IF NOT EXISTS `users` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(50) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `firstname` varchar(100) NOT NULL,
+  `lastname` varchar(100) NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `username` (`username`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4;
+
+-- Dumping data for table sql12785202.users: ~3 rows (approximately)
+INSERT INTO `users` (`id`, `username`, `password`, `firstname`, `lastname`, `created_at`) VALUES
+	(2, 'gjboltiador', '1234', 'Godfrey', 'Boltiador', '2025-06-17 03:27:40'),
+	(4, 'test_responder_1750383701573', 'testpassword123', 'Godfrey', 'Boltiador', '2025-06-20 02:04:32'),
+	(5, 'test_responder', '987654321', 'Light', 'Boltiador', '2025-06-20 03:00:11');
+
+/*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
+/*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
+/*!40014 SET FOREIGN_KEY_CHECKS=IFNULL(@OLD_FOREIGN_KEY_CHECKS, 1) */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40111 SET SQL_NOTES=IFNULL(@OLD_SQL_NOTES, 1) */;

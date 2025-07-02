@@ -1,0 +1,476 @@
+/* Full-screen map styles - only apply when not in modal */
+.leaflet-container {
+  height: 100vh !important;
+  width: 100vw !important;
+  z-index: 1;
+}
+
+/* Modal-specific map styles - more specific selectors */
+[role="dialog"] .leaflet-container,
+[data-modal="true"] .leaflet-container,
+.leaflet-container[data-in-modal="true"],
+.modal .leaflet-container,
+.dialog .leaflet-container {
+  height: 60vh !important;
+  width: 100% !important;
+  max-height: 500px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Ensure map container doesn't overflow its parent */
+.map-container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Modal map container - more specific */
+.modal-map-container {
+  width: 100%;
+  height: 60vh;
+  max-height: 500px;
+  overflow: hidden;
+  border-radius: 8px;
+  position: relative;
+}
+
+/* Additional modal context styles */
+[role="dialog"] .modal-map-container,
+[data-modal="true"] .modal-map-container {
+  height: 60vh !important;
+  max-height: 500px !important;
+  overflow: hidden;
+}
+
+/* Ensure dialog content doesn't overflow */
+[role="dialog"] .leaflet-container,
+[data-modal="true"] .leaflet-container {
+  max-height: 500px !important;
+  overflow: hidden !important;
+}
+
+/* Additional dialog-specific constraints */
+[role="dialog"] .modal-map-container,
+[data-modal="true"] .modal-map-container {
+  height: 60vh !important;
+  max-height: 500px !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+/* Force dialog map constraints */
+[data-modal="true"] .leaflet-container {
+  height: 60vh !important;
+  max-height: 500px !important;
+  width: 100% !important;
+  overflow: hidden !important;
+  border-radius: 8px !important;
+}
+
+/* Ensure dialog content wrapper doesn't overflow */
+[role="dialog"] > div,
+[data-modal="true"] > div {
+  overflow: hidden !important;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-popup-content {
+  margin: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.leaflet-popup-tip {
+  background: white;
+}
+
+/* Fix for default marker icon */
+.leaflet-default-icon-path {
+  background-image: url('/images/marker-icon.svg');
+}
+
+.leaflet-default-shadow-path {
+  background-image: url('/images/marker-shadow.svg');
+}
+
+/* Custom marker styles */
+.custom-div-icon {
+  background: transparent;
+  border: none;
+}
+
+.custom-div-icon svg {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Navigation overlay styles */
+.navigation-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.navigation-overlay * {
+  pointer-events: auto;
+}
+
+/* Turn-by-turn navigation */
+.turn-by-turn {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Map controls */
+.map-controls {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.map-control-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  border: none;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.map-control-button:hover {
+  background: #f8fafc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.map-control-button.active {
+  background: #3b82f6;
+  color: white;
+}
+
+/* Offline indicator */
+.offline-indicator {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  background: #f59e0b;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Location accuracy indicator */
+.location-accuracy {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  z-index: 1000;
+}
+
+/* Route line styles */
+.route-line {
+  stroke: #3b82f6;
+  stroke-width: 4;
+  stroke-opacity: 0.8;
+  fill: none;
+}
+
+.route-line-offline {
+  stroke: #f59e0b;
+  stroke-width: 4;
+  stroke-opacity: 0.8;
+  stroke-dasharray: 8,4;
+  fill: none;
+}
+
+/* Loading spinner */
+.map-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+}
+
+.map-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Full-screen mode styles - only for dedicated map page */
+.fullscreen-map {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+}
+
+/* Status bar styles */
+.status-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 8px 16px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Navigation info panel */
+.navigation-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  z-index: 1000;
+}
+
+/* Modal-specific adjustments */
+.modal .map-controls {
+  top: 8px;
+  right: 8px;
+}
+
+.modal .map-control-button {
+  width: 36px;
+  height: 36px;
+}
+
+.modal .turn-by-turn {
+  margin: 8px;
+  padding: 12px;
+  font-size: 0.875rem;
+}
+
+.modal .offline-indicator,
+.modal .location-accuracy {
+  bottom: 8px;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+}
+
+.modal .offline-indicator {
+  left: 8px;
+}
+
+.modal .location-accuracy {
+  right: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .map-controls {
+    top: 8px;
+    right: 8px;
+  }
+  
+  .map-control-button {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .turn-by-turn {
+    margin: 8px;
+    padding: 12px;
+  }
+  
+  .offline-indicator,
+  .location-accuracy {
+    bottom: 8px;
+    font-size: 0.75rem;
+  }
+  
+  .offline-indicator {
+    left: 8px;
+  }
+  
+  .location-accuracy {
+    right: 8px;
+  }
+
+  /* Mobile modal adjustments */
+  .modal .leaflet-container,
+  [data-modal="true"] .leaflet-container,
+  .leaflet-container[data-in-modal="true"] {
+    height: 60vh !important;
+    max-height: 400px;
+  }
+}
+
+/* High contrast mode for accessibility */
+@media (prefers-contrast: high) {
+  .map-control-button {
+    border: 2px solid #000;
+  }
+  
+  .turn-by-turn {
+    border: 2px solid #000;
+  }
+  
+  .offline-indicator {
+    border: 2px solid #000;
+  }
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .map-loading-spinner {
+    animation: none;
+  }
+
+  .map-control-button:hover {
+    transform: none;
+  }
+}
+
+/* Bearing Indicator Styles */
+.bearing-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.bearing-arrow {
+  transition: transform 0.3s ease;
+  color: #3b82f6;
+}
+
+.bearing-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.modal-bearing-indicator {
+  padding: 6px;
+}
+
+.modal-bearing-indicator .bearing-arrow {
+  width: 1rem;
+  height: 1rem;
+}
+
+.modal-bearing-indicator .bearing-text {
+  font-size: 0.625rem;
+}
+
+/* Enhanced Turn-by-Turn Navigation */
+.turn-by-turn {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.modal-turn-by-turn {
+  margin: 8px;
+  padding: 12px;
+}
+
+/* Voice Navigation Controls */
+.voice-controls {
+  position: absolute;
+  bottom: 80px;
+  right: 16px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.voice-control-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  border: none;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.voice-control-button:hover {
+  background: #f8fafc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.voice-control-button.active {
+  background: #3b82f6;
+  color: white;
+}
+
+.modal .voice-controls {
+  bottom: 60px;
+  right: 8px;
+}
+
+.modal .voice-control-button {
+  width: 40px;
+  height: 40px;
+}
+
+ 
