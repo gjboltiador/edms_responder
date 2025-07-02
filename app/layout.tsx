@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   title: 'EDMS Responder',
   description: 'The EDMS Responder Application is designed to efficiently track field responders and streamline the collection of incident and patient data.',
   generator: 'GF IT Solutions',
+  icons: {
+    icon: '/placeholder-logo.png',
+  },
 }
 
 export default function RootLayout({
