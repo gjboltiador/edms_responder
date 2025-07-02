@@ -1,19 +1,9 @@
-const mysql = require('mysql2/promise');
+const { createConnection } = require('./db-config');
 const fs = require('fs');
 const path = require('path');
 
 async function setupDatabase() {
- /* const connection = await mysql.createConnection({
-    host: '127.0.0.1',
-    user: 'root',
-    password: 'GF@dm1n'
-  });*/
-
-  const connection = await mysql.createConnection({
-    host: 'sql12.freesqldatabase.com',
-    user: 'sql12785202',
-    password: 'IGkaKLGJxR'
-  });
+  const connection = await createConnection();
 
   try {
     // Ensure database exists and is selected

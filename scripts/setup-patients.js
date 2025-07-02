@@ -1,13 +1,8 @@
-const mysql = require('mysql2/promise');
+const { createConnection } = require('./db-config');
 const { v4: uuidv4 } = require('uuid');
 
 async function setupPatients() {
-  const connection = await mysql.createConnection({
-    host: '127.0.0.1',
-    user: 'root',
-    password: 'GF@dm1n',
-    database: 'edms_responder'
-  });
+  const connection = await createConnection();
 
   try {
     // Read and execute the schema file

@@ -1,23 +1,11 @@
-const mysql = require('mysql2/promise');
-
-// Database configuration
-const dbConfig = {
-  host: '34.95.212.100',
-  user: 'edms-responder',
-  password: 'EDMS@dm1n',
-  database: 'edms',
-  port: 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-};
+const { createConnection } = require('./db-config');
 
 async function testERTReports() {
   let connection;
   
   try {
     console.log('🔌 Connecting to database...');
-    connection = await mysql.createConnection(dbConfig);
+    connection = await createConnection();
     
     console.log('\n📋 Testing ERT Reports Responder Display...\n');
     

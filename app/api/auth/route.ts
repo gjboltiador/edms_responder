@@ -31,6 +31,15 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Authentication error:', error);
+    
+    // Check if it's a database connection error
+    if (error instanceof Error && error.message.includes('connect')) {
+      return NextResponse.json(
+        { error: 'Database connection failed. Please try again later.' },
+        { status: 503 }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'Authentication failed' },
       { status: 500 }

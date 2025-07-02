@@ -15,49 +15,81 @@ interface GpsData {
   latlng: string;
 }
 
-// Database connection configuration
-/*const dbConfig = {
-  host: '127.0.0.1',
-  user: 'root',
-  password: 'GF@dm1n',
-  database: 'edms_responder',
-  port: 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-};*/
-
-const dbConfig = {
-  host: '34.95.212.100',
-  user: 'edms-responder',
-  password: 'EDMS@dm1n',
-  database: 'edms',
-  port: 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
+// Validate required environment variables
+const validateEnvironmentVariables = () => {
+  const requiredVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
+  const missingVars = requiredVars.filter(varName => !process.env[varName]);
+  
+  if (missingVars.length > 0) {
+    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+  }
 };
 
-// Create a connection pool
-const pool = mysql.createPool(dbConfig);
+// Secure database connection configuration
+const getDbConfig = () => {
+  // Validate environment variables in production
+  if (process.env.NODE_ENV === 'production') {
+    validateEnvironmentVariables();
+  }
 
-// Test database connection
-pool.getConnection()
-  .then(async (connection) => {
-    try {
-      await connection.query('SELECT 1 as test');
-    } catch (error) {
-      console.error('Database connection test failed:', error);
-      process.exit(1); // Exit if we can't connect to the database
-    }
+  return {
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: parseInt(process.env.DB_PORT || '3306'),
+    waitForConnections: true,
+    connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT || '10'),
+    queueLimit: 0,
+    // Security enhancements
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+    acquireTimeout: 60000,
+    timeout: 60000,
+    reconnect: true,
+    charset: 'utf8mb4'
+  };
+};
+
+// Create a connection pool with secure configuration
+let pool: mysql.Pool;
+
+try {
+  const dbConfig = getDbConfig();
+  pool = mysql.createPool(dbConfig);
+} catch (error) {
+  console.error('Failed to create database pool:', error instanceof Error ? error.message : 'Unknown error');
+  // In production, we should fail fast if database config is invalid
+  if (process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  }
+  throw error;
+}
+
+// Test database connection with secure error handling
+const testConnection = async () => {
+  try {
+    const connection = await pool.getConnection();
+    await connection.query('SELECT 1 as test');
+    console.log('Database connection successful');
     connection.release();
-  })
-  .catch(err => {
-    console.error('Failed to get database connection:', err);
-    process.exit(1); // Exit if we can't connect to the database
-  });
+  } catch (error) {
+    // Log minimal error information in production
+    if (process.env.NODE_ENV === 'production') {
+      console.error('Database connection failed');
+    } else {
+      console.error('Database connection test failed:', error instanceof Error ? error.message : 'Unknown error');
+    }
+    
+    if (process.env.NODE_ENV === 'development') {
+      process.exit(1);
+    }
+  }
+};
 
-// Helper function to execute queries with error handling
+// Initialize connection test
+testConnection();
+
+// Helper function to execute queries with secure error handling
 export async function query<T>(sql: string, params: any[] = []): Promise<T[]> {
   let connection;
   try {
@@ -65,7 +97,12 @@ export async function query<T>(sql: string, params: any[] = []): Promise<T[]> {
     const [results] = await connection.execute(sql, params);
     return results as T[];
   } catch (error) {
-    console.error('Database query error:', error);
+    // Log minimal error information in production
+    if (process.env.NODE_ENV === 'production') {
+      console.error('Database query error occurred');
+    } else {
+      console.error('Database query error:', error instanceof Error ? error.message : 'Unknown error');
+    }
     throw error;
   } finally {
     if (connection) {

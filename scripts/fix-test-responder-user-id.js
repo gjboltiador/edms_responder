@@ -1,23 +1,11 @@
-const mysql = require('mysql2/promise');
-
-// Database configuration
-const dbConfig = {
-  host: 'sql12.freesqldatabase.com',
-  user: 'sql12785202',
-  password: 'IGkaKLGJxR',
-  database: 'sql12785202',
-  port: 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-};
+const { createConnection } = require('./db-config');
 
 async function fixTestResponderUserId() {
   let connection;
   
   try {
     console.log('🔌 Connecting to database...');
-    connection = await mysql.createConnection(dbConfig);
+    connection = await createConnection();
     
     console.log('\n🔧 Fixing test_responder user_id...\n');
     

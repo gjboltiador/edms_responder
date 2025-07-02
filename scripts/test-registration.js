@@ -1,23 +1,11 @@
-const mysql = require('mysql2/promise');
-
-// Database configuration (same as in lib/db.ts)
-const dbConfig = {
-  host: 'sql12.freesqldatabase.com',
-  user: 'sql12785202',
-  password: 'IGkaKLGJxR',
-  database: 'sql12785202',
-  port: 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-};
+const { createConnection } = require('./db-config');
 
 async function testRegistration() {
   let connection;
   
   try {
     console.log('🔌 Connecting to database...');
-    connection = await mysql.createConnection(dbConfig);
+    connection = await createConnection();
     
     // Test 1: Check if users table exists
     console.log('\n📋 Test 1: Checking users table...');

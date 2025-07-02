@@ -1,12 +1,7 @@
-const mysql = require('mysql2/promise');
+const { createConnection } = require('./db-config');
 
 async function listTables() {
-  const connection = await mysql.createConnection({
-  host: '34.95.212.100',
-  user: 'edms-responder',
-  password: 'EDMS@dm1n',
-  database: 'edms'
-});
+  const connection = await createConnection();
 
   try {
     const [rows] = await connection.query('SHOW TABLES');
