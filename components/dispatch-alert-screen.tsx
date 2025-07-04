@@ -88,16 +88,28 @@ function DispatchAlertScreenContent({ setActiveTab, setSelectedAlert, user }: Di
 
   const loadAlerts = async () => {
     try {
+      console.log('Loading alerts...')
       const response = await fetch('/api/alerts')
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch alerts')
+        console.error('Failed to fetch alerts. Status:', response.status, response.statusText)
+        const errorText = await response.text()
+        console.error('Error response:', errorText)
+        setError('Failed to load alerts')
+        setLoading(false)
+        return
       }
+      
       const data = await response.json()
+      console.log('Alerts data received:', data)
+      
       // Filter out completed alerts using case-insensitive comparison
       const activeAlerts = data.filter((alert: Alert) => alert.status?.toLowerCase() !== "completed")
       setAlerts(activeAlerts)
       setLoading(false)
+      console.log('Active alerts loaded:', activeAlerts.length)
     } catch (err) {
+      console.error('Error loading alerts:', err)
       setError('Failed to load alerts')
       setLoading(false)
     }
@@ -112,16 +124,30 @@ function DispatchAlertScreenContent({ setActiveTab, setSelectedAlert, user }: Di
         return
       }
 
+      console.log('Loading responder ID for username:', username)
+
       // Get responder ID by username
       const response = await fetch(`/api/responder/status?username=${encodeURIComponent(username)}`)
-      if (response.ok) {
-        const data = await response.json()
-        if (data.id) {
-          setResponderId(data.id)
-        }
+      
+      if (!response.ok) {
+        console.error('Failed to load responder ID. Status:', response.status, response.statusText)
+        const errorText = await response.text()
+        console.error('Error response:', errorText)
+        return
+      }
+      
+      const data = await response.json()
+      console.log('Responder data received:', data)
+      
+      if (data.id) {
+        setResponderId(data.id)
+        console.log('Responder ID set:', data.id)
+      } else {
+        console.log('No responder ID found in response')
       }
     } catch (error) {
       console.error('Failed to load responder ID:', error)
+      // Don't throw the error, just log it and continue
     }
   }
 
@@ -129,6 +155,18 @@ function DispatchAlertScreenContent({ setActiveTab, setSelectedAlert, user }: Di
     loadAlerts()
     loadResponderId()
   }, [])
+
+  // Retry loading responder ID if it fails initially
+  useEffect(() => {
+    if (!responderId && user?.username) {
+      const retryTimer = setTimeout(() => {
+        console.log('Retrying responder ID lookup...')
+        loadResponderId()
+      }, 5000) // Retry after 5 seconds
+      
+      return () => clearTimeout(retryTimer)
+    }
+  }, [responderId, user?.username])
 
   useEffect(() => {
     // Get the selected alert ID from localStorage
