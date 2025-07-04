@@ -14,10 +14,12 @@ DB_USER=your_database_user
 DB_PASSWORD=your_database_password
 DB_NAME=your_database_name
 DB_PORT=3306
+DB_CONNECTION_LIMIT=10
+DB_SSL=false
 NODE_ENV=production
 ```
 
-**⚠️ SECURITY WARNING:** Never use the credentials shown in the old version of this file. They have been compromised and should be considered insecure.
+**⚠️ SECURITY WARNING:** Never commit database credentials to version control. Always use environment variables for sensitive data.
 
 ### 2. Common Deployment Issues
 
