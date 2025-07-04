@@ -37,21 +37,21 @@ CREATE TABLE IF NOT EXISTS `alerts` (
 
 -- Dumping data for table edms.alerts: ~15 rows (approximately)
 INSERT INTO `alerts` (`id`, `type`, `location`, `latitude`, `longitude`, `description`, `severity`, `status`, `created_at`, `updated_at`) VALUES
-	(1, 'Trauma', '123 Main St', 9.38521800, 122.78958100, 'Multiple vehicle accident', 'High', 'completed', '2025-06-15 14:56:12', '2025-06-24 18:41:07'),
-	(2, 'Medical', '123 Main Street, Downtown', 9.38521800, 122.78958100, 'Patient experiencing severe chest pain and shortness of breath', 'High', 'accepted', '2025-06-15 15:00:01', '2025-06-24 18:41:33'),
-	(3, 'Medical', '456 Oak Avenue, Westside', 9.38521800, 122.78958100, 'Elderly patient with high fever and confusion', 'Medium', 'accepted', '2025-06-15 15:00:01', '2025-06-24 18:41:37'),
+	(1, 'Trauma', '123 Main St', 9.38521800, 122.78958100, 'Multiple vehicle accident', 'High', 'Completed', '2025-06-15 14:56:12', '2025-06-30 12:35:48'),
+	(2, 'Medical', '123 Main Street, Downtown', 9.38521800, 122.78958100, 'Patient experiencing severe chest pain and shortness of breath', 'High', 'Accepted', '2025-06-15 15:00:01', '2025-06-30 12:35:58'),
+	(3, 'Medical', '456 Oak Avenue, Westside', 9.38521800, 122.78958100, 'Elderly patient with high fever and confusion', 'Medium', 'Accepted', '2025-06-15 15:00:01', '2025-06-30 12:36:08'),
 	(4, 'Medical', '789 Pine Road, Eastside', 9.36354200, 122.80747500, 'Diabetic patient with low blood sugar', 'Medium', 'Pending', '2025-06-15 15:00:01', '2025-06-24 18:42:44'),
 	(5, 'Trauma', '321 Elm Street, North District', 9.36354200, 121.00420000, 'Multiple vehicle accident with 3 casualties', 'High', 'Pending', '2025-06-15 15:00:01', '2025-06-24 18:42:57'),
 	(6, 'Trauma', '654 Maple Drive, Southside', 14.56950000, 120.95420000, 'Construction site accident - fall from height', 'High', 'Pending', '2025-06-15 15:00:01', '2025-06-24 18:04:11'),
 	(7, 'Trauma', '987 Cedar Lane, Central', 14.62950000, 121.01420000, 'Pedestrian hit by vehicle', 'High', 'Pending', '2025-06-15 15:00:01', '2025-06-24 18:04:11'),
-	(8, 'Fire', '147 Birch Court, Industrial Zone', 14.55950000, 120.94420000, 'Factory fire with smoke inhalation cases', 'High', 'accepted', '2025-06-15 15:00:01', '2025-06-24 22:51:47'),
+	(8, 'Fire', '147 Birch Court, Industrial Zone', 14.55950000, 120.94420000, 'Factory fire with smoke inhalation cases', 'High', 'Completed', '2025-06-15 15:00:01', '2025-06-30 12:35:40'),
 	(9, 'Fire', '258 Spruce Way, Residential Area', 14.63950000, 121.02420000, 'Apartment building fire - multiple units affected', 'High', 'Pending', '2025-06-15 15:00:01', '2025-06-24 18:04:11'),
 	(10, 'Fire', '369 Willow Street, Commercial District', 14.54950000, 120.93420000, 'Restaurant kitchen fire', 'Medium', 'Pending', '2025-06-15 15:00:01', '2025-06-24 18:04:11'),
 	(11, 'Natural Disaster', '741 Redwood Road, Coastal Area', 14.64950000, 121.03420000, 'Flash flood affecting multiple homes', 'High', 'Pending', '2025-06-15 15:00:01', '2025-06-24 18:04:11'),
 	(12, 'Natural Disaster', '852 Sequoia Avenue, Mountain Region', 14.53950000, 120.92420000, 'Landslide blocking main road', 'High', 'Pending', '2025-06-15 15:00:01', '2025-06-24 18:04:11'),
 	(13, 'Other', '963 Magnolia Drive, Shopping District', 14.65950000, 121.04420000, 'Mass gathering incident - multiple injuries', 'Medium', 'Pending', '2025-06-15 15:00:01', '2025-06-24 18:04:11'),
 	(14, 'Other', '159 Cypress Lane, Park Area', 9.36354200, 122.80747500, 'Water rescue - person trapped in river', 'High', 'Pending', '2025-06-15 15:00:01', '2025-06-24 18:43:33'),
-	(16, 'Other', '486 Ash Road, School Zone', 9.36354200, 122.80747500, 'Chemical spill in laboratory', 'High', 'completed', '2025-06-15 15:00:01', '2025-06-24 18:43:18');
+	(16, 'Other', '486 Ash Road, School Zone', 9.36354200, 122.80747500, 'Chemical spill in laboratory', 'High', 'Completed', '2025-06-15 15:00:01', '2025-06-30 12:35:32');
 
 -- Dumping structure for table edms.alert_assignments
 CREATE TABLE IF NOT EXISTS `alert_assignments` (
@@ -70,14 +70,15 @@ CREATE TABLE IF NOT EXISTS `alert_assignments` (
   CONSTRAINT `alert_assignments_ibfk_1` FOREIGN KEY (`alert_id`) REFERENCES `alerts` (`id`) ON DELETE CASCADE,
   CONSTRAINT `alert_assignments_ibfk_2` FOREIGN KEY (`responder_id`) REFERENCES `responders` (`id`) ON DELETE CASCADE,
   CONSTRAINT `alert_assignments_ibfk_3` FOREIGN KEY (`assigned_by`) REFERENCES `responders` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table edms.alert_assignments: ~4 rows (approximately)
+-- Dumping data for table edms.alert_assignments: ~5 rows (approximately)
 INSERT INTO `alert_assignments` (`id`, `alert_id`, `responder_id`, `assigned_by`, `assigned_at`, `unassigned_at`, `status`, `notes`) VALUES
-	(1, 10, 1, NULL, '2025-06-25 02:09:35', '2025-06-25 02:09:39', 'completed', NULL),
+	(1, 10, 1, NULL, '2025-06-25 02:09:35', '2025-06-25 02:35:33', 'completed', NULL),
 	(2, 11, 2, NULL, '2025-06-25 02:09:35', '2025-06-25 02:09:39', 'completed', NULL),
-	(3, 8, 2, NULL, '2025-06-24 22:51:45', NULL, 'accepted', NULL),
-	(4, 8, 2, NULL, '2025-06-24 22:51:48', NULL, 'accepted', NULL);
+	(3, 8, 2, NULL, '2025-06-24 22:51:45', '2025-06-30 20:19:13', 'accepted', NULL),
+	(4, 1, 2, NULL, '2025-06-24 22:51:45', '2025-06-30 20:19:17', 'completed', NULL),
+	(5, 16, 2, NULL, '2025-06-25 02:09:35', '2025-06-25 02:09:39', 'completed', NULL);
 
 -- Dumping structure for table edms.gps_data
 CREATE TABLE IF NOT EXISTS `gps_data` (
