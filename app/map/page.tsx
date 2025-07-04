@@ -22,7 +22,7 @@ const EnhancedMapView = dynamic(() => import('@/components/map/EnhancedMapView')
 })
 
 export default function Map() {
-  const [isOnline, setIsOnline] = useState(navigator.onLine)
+  const [isOnline, setIsOnline] = useState(true) // Default to true, will be updated in useEffect
   const [selectedAlert, setSelectedAlert] = useState<any>(null)
   
   const {
@@ -37,6 +37,9 @@ export default function Map() {
 
   // Check online status
   useEffect(() => {
+    // Set initial online status
+    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true)
+    
     const handleOnline = () => setIsOnline(true)
     const handleOffline = () => setIsOnline(false)
 
@@ -51,7 +54,7 @@ export default function Map() {
 
   // Register service worker
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
         .then(registration => {
           console.log('Service Worker registered:', registration)

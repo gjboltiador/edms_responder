@@ -21,15 +21,31 @@ const validateEnvironmentVariables = () => {
   const missingVars = requiredVars.filter(varName => !process.env[varName]);
   
   if (missingVars.length > 0) {
-    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+    console.warn(`Missing required environment variables: ${missingVars.join(', ')}`);
+    console.warn('Database functionality will be limited. Please create a .env file with database credentials.');
+    return false;
   }
+  return true;
 };
 
 // Secure database connection configuration
 const getDbConfig = () => {
-  // Validate environment variables in production
-  if (process.env.NODE_ENV === 'production') {
-    validateEnvironmentVariables();
+  // Validate environment variables
+  const hasValidConfig = validateEnvironmentVariables();
+  
+  if (!hasValidConfig) {
+    // Return a dummy config that will fail gracefully
+    return {
+      host: 'localhost',
+      user: 'dummy',
+      password: 'dummy',
+      database: 'dummy',
+      port: 3306,
+      waitForConnections: true,
+      connectionLimit: 1,
+      queueLimit: 0,
+      charset: 'utf8mb4'
+    };
   }
 
   return {
@@ -42,10 +58,7 @@ const getDbConfig = () => {
     connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT || '10'),
     queueLimit: 0,
     // Security enhancements
-    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
-    acquireTimeout: 60000,
-    timeout: 60000,
-    reconnect: true,
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
     charset: 'utf8mb4'
   };
 };
