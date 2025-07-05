@@ -24,16 +24,28 @@ const EnhancedMapView = dynamic(() => import('@/components/map/EnhancedMapView')
 export default function Map() {
   const [isOnline, setIsOnline] = useState(true) // Default to true, will be updated in useEffect
   const [selectedAlert, setSelectedAlert] = useState<any>(null)
+  const [locationHistory, setLocationHistory] = useState<Array<{lat: number, lng: number, time: string}>>([])
   
   const {
     currentLocation,
     locationPermission,
     locationError,
     navigationState,
+    startLocationTracking,
     startNavigation,
     stopNavigation,
     updateNavigationState
   } = useLocationTracking()
+
+  // Track location history for debugging
+  useEffect(() => {
+    if (currentLocation) {
+      setLocationHistory(prev => [
+        { lat: currentLocation.latitude, lng: currentLocation.longitude, time: new Date().toLocaleTimeString() },
+        ...prev.slice(0, 4) // Keep last 5 locations
+      ])
+    }
+  }, [currentLocation])
 
   // Check online status
   useEffect(() => {
@@ -109,14 +121,35 @@ export default function Map() {
               Location Error
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <p className="text-gray-600 mb-4">{locationError}</p>
-            <Button 
-              onClick={() => window.location.reload()} 
-              className="w-full"
-            >
-              Retry
-            </Button>
+            
+            <div className="space-y-2">
+              <Button 
+                onClick={() => window.location.reload()} 
+                className="w-full"
+              >
+                Retry
+              </Button>
+              
+              <Button 
+                variant="outline"
+                onClick={() => window.location.href = '/location-test'} 
+                className="w-full"
+              >
+                Test Location Access
+              </Button>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <h3 className="font-semibold text-blue-900 mb-2">How to Fix:</h3>
+              <div className="text-sm text-blue-800 space-y-1">
+                <div>1. Click the lock/shield icon in your browser's address bar</div>
+                <div>2. Find "Location" in the permissions list</div>
+                <div>3. Change it from "Block" to "Allow"</div>
+                <div>4. Refresh this page and try again</div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -172,6 +205,18 @@ export default function Map() {
               <Target className="h-3 w-3" />
               Accuracy: {currentLocation.accuracy.toFixed(0)}m
             </Badge>
+            <Badge variant="default" className="flex items-center gap-1">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              Tracking
+            </Badge>
+            {currentLocation?.heading !== undefined && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
+                {Math.round(currentLocation.heading)}°
+              </Badge>
+            )}
           </div>
 
           {/* Center - Alert information */}
@@ -211,16 +256,27 @@ export default function Map() {
                 <Navigation className="h-4 w-4" />
                 Stop Navigation
               </Button>
-            ) : (
-              <Button 
-                size="sm"
-                onClick={handleStartNavigation}
-                className="flex items-center gap-1"
-                disabled={!selectedAlert}
-              >
-                <Navigation className="h-4 w-4" />
-                Start Navigation
-              </Button>
+                        ) : (
+              <>
+                <Button 
+                  size="sm"
+                  onClick={handleStartNavigation}
+                  className="flex items-center gap-1"
+                  disabled={!selectedAlert}
+                >
+                  <Navigation className="h-4 w-4" />
+                  Start Navigation
+                </Button>
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  onClick={startLocationTracking}
+                  className="flex items-center gap-1"
+                  title="Refresh location"
+                >
+                  <Target className="h-4 w-4" />
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -237,6 +293,7 @@ export default function Map() {
           isOnline={isOnline}
           onNavigationUpdate={(updates) => updateNavigationState(updates)}
           alert={selectedAlert}
+          currentLocationData={currentLocation}
         />
       </div>
 
@@ -272,6 +329,18 @@ export default function Map() {
               <p className="text-xs text-gray-500 mt-1">{selectedAlert.status}</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Debug Panel - Location History */}
+      {process.env.NODE_ENV === 'development' && locationHistory.length > 0 && (
+        <div className="bg-gray-100 border-t border-gray-200 p-2 text-xs">
+          <div className="font-semibold mb-1">Location History (Debug):</div>
+          {locationHistory.map((loc, index) => (
+            <div key={index} className="text-gray-600">
+              {loc.time}: {loc.lat.toFixed(6)}, {loc.lng.toFixed(6)}
+            </div>
+          ))}
         </div>
       )}
     </div>

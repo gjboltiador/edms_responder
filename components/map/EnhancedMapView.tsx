@@ -42,6 +42,21 @@ const getSeverityColor = (severity: string): string => {
   }
 }
 
+// Function to calculate bearing between two points
+const calculateBearing = (origin: [number, number], destination: [number, number]): number => {
+  const lat1 = origin[0] * Math.PI / 180
+  const lat2 = destination[0] * Math.PI / 180
+  const deltaLng = (destination[1] - origin[1]) * Math.PI / 180
+  
+  const y = Math.sin(deltaLng) * Math.cos(lat2)
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLng)
+  
+  let bearing = Math.atan2(y, x) * 180 / Math.PI
+  bearing = (bearing + 360) % 360
+  
+  return bearing
+}
+
 // Check if component is inside a modal
 const isInModal = (): boolean => {
   if (typeof window === 'undefined') return false
@@ -58,10 +73,10 @@ const isInModal = (): boolean => {
   ]
   
   // Check if any parent element matches modal selectors
-  let element = document.activeElement || document.body
+  let element: Element | null = document.activeElement || document.body
   while (element && element !== document.body) {
     for (const selector of modalSelectors) {
-      if (element.matches(selector)) {
+      if (element.matches && element.matches(selector)) {
         return true
       }
     }
@@ -175,32 +190,57 @@ class OfflineRoutingCache {
   }
 }
 
-// Component to handle map bounds and auto-follow
+// Component to handle map bounds, auto-follow, and compass rotation
 const MapController = ({ 
   currentLocation, 
   destination, 
   isNavigating, 
   autoFollow,
-  isModal 
+  isModal,
+  heading,
+  enableCompassRotation
 }: { 
   currentLocation: [number, number]
   destination: [number, number]
   isNavigating: boolean
   autoFollow: boolean
   isModal: boolean
+  heading?: number
+  enableCompassRotation: boolean
 }) => {
   const map = useMap()
 
   useEffect(() => {
     if (isNavigating && autoFollow) {
-      // Follow current location during navigation
-      map.setView(currentLocation, isModal ? 14 : 16)
+      // Follow current location during navigation with smooth animation
+      map.setView(currentLocation, isModal ? 14 : 16, { animate: true })
+      console.log('Map following location:', currentLocation)
     } else if (currentLocation && destination) {
       // Show both locations when not navigating
       const bounds = L.latLngBounds([currentLocation, destination])
       map.fitBounds(bounds, { padding: [50, 50] })
     }
   }, [currentLocation, destination, isNavigating, autoFollow, map, isModal])
+
+  // Handle compass rotation
+  useEffect(() => {
+    if (enableCompassRotation && heading !== undefined && heading !== null) {
+      // Rotate the map based on device heading
+      // Note: Leaflet doesn't have built-in rotation, so we'll use CSS transform
+      const mapContainer = map.getContainer()
+      if (mapContainer) {
+        mapContainer.style.transform = `rotate(${-heading}deg)`
+        mapContainer.style.transformOrigin = 'center center'
+        console.log('Map rotated to heading:', heading)
+      }
+    } else {
+      // Reset rotation
+      const mapContainer = map.getContainer()
+      if (mapContainer) {
+        mapContainer.style.transform = ''
+      }
+    }
+  }, [heading, enableCompassRotation, map])
 
   return null
 }
@@ -428,6 +468,15 @@ const TurnByTurnNavigation = ({
   )
 }
 
+interface LocationData {
+  latitude: number
+  longitude: number
+  accuracy: number
+  timestamp: number
+  heading?: number
+  speed?: number
+}
+
 interface Alert {
   id: number;
   type: string;
@@ -450,6 +499,7 @@ interface EnhancedMapViewProps {
   onNavigationUpdate: (updates: any) => void
   className?: string
   alert?: Alert
+  currentLocationData?: LocationData
 }
 
 export default function EnhancedMapView({ 
@@ -461,13 +511,31 @@ export default function EnhancedMapView({
   isOnline,
   onNavigationUpdate,
   className = "",
-  alert
+  alert,
+  currentLocationData
 }: EnhancedMapViewProps) {
+  // Debug location updates
+  useEffect(() => {
+    console.log('Map received location update:', {
+      lat: currentLocation[0],
+      lng: currentLocation[1],
+      heading: currentLocationData?.heading,
+      timestamp: new Date().toLocaleTimeString()
+    })
+  }, [currentLocation, currentLocationData])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [routeData, setRouteData] = useState<any>(null)
   const [autoFollow, setAutoFollow] = useState(true)
   const [isModal, setIsModal] = useState(false)
+  const [enableCompassRotation, setEnableCompassRotation] = useState(false)
+
+  // Auto-enable compass rotation when navigation starts
+  useEffect(() => {
+    if (isNavigating && currentLocationData?.heading !== undefined) {
+      setEnableCompassRotation(true)
+    }
+  }, [isNavigating, currentLocationData?.heading])
   const tileCache = useRef(new OfflineTileCache())
   const destinationMarkerRef = useRef<L.Marker | null>(null)
   const mapContainerRef = useRef<HTMLDivElement>(null)
@@ -596,15 +664,31 @@ export default function EnhancedMapView({
         />
         
         {/* Current location marker with accuracy circle */}
-        <Marker position={currentLocation} icon={createColoredIcon('#3b82f6')}>
+        <Marker 
+          key={`current-${currentLocation[0]}-${currentLocation[1]}`}
+          position={currentLocation} 
+          icon={createColoredIcon('#3b82f6')}
+        >
           <Popup>Your Location</Popup>
         </Marker>
         <Circle 
+          key={`circle-${currentLocation[0]}-${currentLocation[1]}`}
           center={currentLocation} 
           radius={10} 
           color="#3b82f6" 
           fillColor="#3b82f6" 
           fillOpacity={0.2} 
+        />
+        {/* Pulsing circle to show active tracking */}
+        <Circle 
+          key={`pulse-${currentLocation[0]}-${currentLocation[1]}`}
+          center={currentLocation} 
+          radius={20} 
+          color="#3b82f6" 
+          fillColor="transparent" 
+          fillOpacity={0} 
+          weight={2}
+          opacity={0.6}
         />
         
         {/* Destination marker */}
@@ -631,22 +715,31 @@ export default function EnhancedMapView({
           isNavigating={isNavigating}
           autoFollow={autoFollow}
           isModal={isModal}
+          heading={currentLocationData?.heading}
+          enableCompassRotation={enableCompassRotation}
         />
       </MapContainer>
 
 
 
-      {/* Turn-by-turn navigation overlay */}
-      {isNavigating && routeData && (
-        <TurnByTurnNavigation 
-          currentLocation={currentLocation}
-          destination={destination}
-          routeData={routeData}
-          bearing={0} // This will be updated with actual bearing from navigation state
-          isModal={isModal}
-          onSpeakInstruction={(text) => console.log('Voice instruction:', text)}
-        />
-      )}
+              {/* Turn-by-turn navigation overlay */}
+        {isNavigating && routeData && (
+          <TurnByTurnNavigation 
+            currentLocation={currentLocation}
+            destination={destination}
+            routeData={routeData}
+            bearing={calculateBearing(currentLocation, destination)}
+            isModal={isModal}
+            onSpeakInstruction={(text) => {
+              if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text)
+                utterance.rate = 0.9
+                utterance.pitch = 1.1
+                speechSynthesis.speak(utterance)
+              }
+            }}
+          />
+        )}
 
       {/* Map controls */}
       <div className={`map-controls ${isModal ? 'modal-controls' : ''}`}>
@@ -677,12 +770,63 @@ export default function EnhancedMapView({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         </button>
+
+        {isNavigating && (
+          <button
+            onClick={() => {
+              if ('speechSynthesis' in window) {
+                if (speechSynthesis.speaking) {
+                  speechSynthesis.cancel()
+                } else {
+                  const utterance = new SpeechSynthesisUtterance('Voice navigation enabled')
+                  speechSynthesis.speak(utterance)
+                }
+              }
+            }}
+            className="map-control-button"
+            title="Toggle voice navigation"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+            </svg>
+          </button>
+        )}
+
+        {/* Compass rotation toggle */}
+        <button
+          onClick={() => setEnableCompassRotation(!enableCompassRotation)}
+          className={`map-control-button ${enableCompassRotation ? 'active' : ''}`}
+          title={enableCompassRotation ? 'Compass rotation enabled' : 'Compass rotation disabled'}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+          </svg>
+        </button>
       </div>
 
       {/* Offline indicator */}
       {!isOnline && (
         <div className={`offline-indicator ${isModal ? 'modal-offline-indicator' : ''}`}>
           Offline Mode
+        </div>
+      )}
+
+      {/* Compass indicator */}
+      {enableCompassRotation && currentLocationData?.heading !== undefined && (
+        <div className={`compass-indicator ${isModal ? 'modal-compass-indicator' : ''}`}>
+          <div className="compass-rose">
+            <div 
+              className="compass-arrow"
+              style={{ transform: `rotate(${currentLocationData.heading}deg)` }}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </div>
+            <div className="compass-text">
+              {Math.round(currentLocationData.heading)}°
+            </div>
+          </div>
         </div>
       )}
     </div>

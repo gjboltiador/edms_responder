@@ -248,6 +248,71 @@
   z-index: 9999;
 }
 
+/* Compass rotation styles */
+.leaflet-container {
+  transition: transform 0.3s ease-out;
+}
+
+.leaflet-container[style*="transform"] {
+  /* Ensure map controls and overlays stay upright during rotation */
+  transform-origin: center center !important;
+}
+
+/* Keep map controls upright during rotation */
+.map-controls {
+  transform: rotate(0deg) !important;
+  transform-origin: center center;
+}
+
+/* Keep navigation overlays upright during rotation */
+.turn-by-turn,
+.offline-indicator,
+.location-accuracy {
+  transform: rotate(0deg) !important;
+  transform-origin: center center;
+}
+
+/* Compass indicator */
+.compass-indicator {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  padding: 8px;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.compass-rose {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.compass-arrow {
+  transition: transform 0.3s ease-out;
+}
+
+.compass-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.modal-compass-indicator {
+  top: 8px;
+  left: 8px;
+  padding: 6px;
+}
+
+.modal-compass-indicator .compass-text {
+  font-size: 0.625rem;
+}
+
 /* Status bar styles */
 .status-bar {
   position: absolute;

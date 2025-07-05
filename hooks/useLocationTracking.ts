@@ -99,7 +99,7 @@ export const useLocationTracking = (): UseLocationTrackingReturn => {
             let errorMessage = 'Location access denied'
             if (error && typeof error === 'object') {
               if (error.code === 1 || error.code === error.PERMISSION_DENIED) {
-                errorMessage = 'Location access denied. Please allow location access in your browser settings.'
+                errorMessage = 'Location access denied. Please allow location access in your browser settings. Click the lock/shield icon in your browser address bar and change Location from "Block" to "Allow".'
               } else if (error.code === 2 || error.code === error.POSITION_UNAVAILABLE) {
                 errorMessage = 'Location unavailable. Please check your GPS signal and try again.'
               } else if (error.code === 3 || error.code === error.TIMEOUT) {
@@ -114,8 +114,8 @@ export const useLocationTracking = (): UseLocationTrackingReturn => {
           },
           {
             enableHighAccuracy: true,
-            timeout: 15000, // Increased timeout for mobile
-            maximumAge: 60000 // Allow cached position up to 1 minute old
+            timeout: 15000, // Increased timeout for better reliability
+            maximumAge: 1000 // Allow cached position up to 1 second old for real-time updates
           }
         )
       })
@@ -134,8 +134,8 @@ export const useLocationTracking = (): UseLocationTrackingReturn => {
 
     const options: PositionOptions = {
       enableHighAccuracy: true,
-      timeout: 15000, // Increased timeout for mobile
-      maximumAge: 60000 // Allow cached position up to 1 minute old
+      timeout: 10000, // Reduced timeout for faster updates
+      maximumAge: 1000 // Allow cached position up to 1 second old for real-time updates
     }
 
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -149,14 +149,26 @@ export const useLocationTracking = (): UseLocationTrackingReturn => {
           speed: position.coords.speed || undefined
         }
 
-        // Only update if location has changed significantly (more than 5 meters)
-        if (!lastLocationRef.current || 
-            calculateDistance(
-              lastLocationRef.current.latitude,
-              lastLocationRef.current.longitude,
-              newLocation.latitude,
-              newLocation.longitude
-            ) > 5) {
+        // Update location more frequently for real-time tracking
+        const distanceThreshold = 1 // Reduced from 5m to 1m for more frequent updates
+        const timeThreshold = 5000 // Update every 5 seconds even if stationary
+        
+        const shouldUpdate = !lastLocationRef.current || 
+          calculateDistance(
+            lastLocationRef.current.latitude,
+            lastLocationRef.current.longitude,
+            newLocation.latitude,
+            newLocation.longitude
+          ) > distanceThreshold ||
+          (newLocation.timestamp - lastLocationRef.current.timestamp) > timeThreshold
+
+        if (shouldUpdate) {
+          console.log('Location updated:', {
+            lat: newLocation.latitude,
+            lng: newLocation.longitude,
+            accuracy: newLocation.accuracy,
+            timestamp: new Date(newLocation.timestamp).toLocaleTimeString()
+          })
           setCurrentLocation(newLocation)
           lastLocationRef.current = newLocation
           setLocationError(null) // Clear any previous errors
