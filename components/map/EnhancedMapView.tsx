@@ -7,10 +7,10 @@ import '@/app/map.css'
 import L from 'leaflet'
 
 // Function to generate SVG content for the current location marker (arrow direction)
-const getCurrentLocationSvg = (color: string, heading: number = 0) => `
+const getCurrentLocationSvg = (color: string, heading: number = 0, mapRotation: number = 0) => `
   <svg width="41px" height="41px" viewBox="0 0 365 373" version="1.1" xmlns="http://www.w3.org/2000/svg">
     <ellipse style="fill:${color};fill-opacity:1;stroke-width:0.982647" cx="185.34448" cy="195.28191" rx="174.25156" ry="177.71809" />
-    <g transform="rotate(${heading}, 185.34448, 195.28191)">
+    <g transform="rotate(${heading - mapRotation}, 185.34448, 195.28191)">
       <path style="fill:#ffffff;fill-opacity:1" d="M 97.987608,93.365551 307.36679,198.28625 99.374226,301.82032 151.14126,198.74845 Z" />
     </g>
   </svg>
@@ -27,8 +27,8 @@ const getDestinationSvg = (color: string) => `
 `
 
 // Function to create a custom divIcon for current location (arrow direction)
-const createCurrentLocationIcon = (color: string, heading: number = 0) => {
-  const svgString = getCurrentLocationSvg(color, heading)
+const createCurrentLocationIcon = (color: string, heading: number = 0, mapRotation: number = 0) => {
+  const svgString = getCurrentLocationSvg(color, heading, mapRotation)
   return L.divIcon({
     html: svgString,
     className: 'custom-div-icon',
@@ -220,7 +220,8 @@ const MapController = ({
   autoFollow,
   isModal,
   heading,
-  enableCompassRotation
+  enableCompassRotation,
+  onMapRotationChange
 }: { 
   currentLocation: [number, number]
   destination: [number, number]
@@ -229,10 +230,12 @@ const MapController = ({
   isModal: boolean
   heading?: number
   enableCompassRotation: boolean
+  onMapRotationChange?: (rotation: number) => void
 }) => {
   const map = useMap()
   const [deviceHeading, setDeviceHeading] = useState<number | null>(null)
   const [isCompassAvailable, setIsCompassAvailable] = useState(false)
+  const [currentMapRotation, setCurrentMapRotation] = useState<number>(0)
 
   // Initialize device orientation and compass sensors
   useEffect(() => {
@@ -328,24 +331,87 @@ const MapController = ({
     const rotationHeading = deviceHeading !== null ? deviceHeading : heading
     
     if (enableCompassRotation && rotationHeading !== undefined && rotationHeading !== null) {
-      // Rotate the map based on device heading
+      // Apply rotation to map elements while maintaining interactivity
       const mapContainer = map.getContainer()
       if (mapContainer) {
-        // Apply smooth rotation
-        mapContainer.style.transition = 'transform 0.3s ease-out'
-        mapContainer.style.transform = `rotate(${-rotationHeading}deg)`
-        mapContainer.style.transformOrigin = 'center center'
+        const rotation = -rotationHeading
+        const transform = `rotate(${rotation}deg)`
+        
+        // Rotate map tiles and overlays
+        const tilePane = mapContainer.querySelector('.leaflet-tile-pane')
+        const overlayPane = mapContainer.querySelector('.leaflet-overlay-pane')
+        const markerPane = mapContainer.querySelector('.leaflet-marker-pane')
+        const popupPane = mapContainer.querySelector('.leaflet-popup-pane')
+        
+        // Apply rotation to map layers
+        if (tilePane instanceof HTMLElement) {
+          tilePane.style.transform = transform
+        }
+        if (overlayPane instanceof HTMLElement) {
+          overlayPane.style.transform = transform
+        }
+        if (markerPane instanceof HTMLElement) {
+          markerPane.style.transform = transform
+        }
+        if (popupPane instanceof HTMLElement) {
+          popupPane.style.transform = transform
+        }
+        
+        // Keep controls and UI elements upright
+        const controls = mapContainer.querySelectorAll('.leaflet-control-container, .map-controls, .turn-by-turn, .bearing-indicator, .compass-indicator')
+        controls.forEach((control: Element) => {
+          if (control instanceof HTMLElement) {
+            control.style.transform = `rotate(${-rotation}deg)`
+          }
+        })
+        
+        // Update map rotation state and notify parent
+        setCurrentMapRotation(rotation)
+        if (onMapRotationChange) {
+          onMapRotationChange(rotation)
+        }
+        
         console.log('Map rotated to heading:', rotationHeading, 'Source:', deviceHeading !== null ? 'Device' : 'GPS')
       }
     } else {
       // Reset rotation
       const mapContainer = map.getContainer()
       if (mapContainer) {
-        mapContainer.style.transition = 'transform 0.3s ease-out'
-        mapContainer.style.transform = ''
+        const tilePane = mapContainer.querySelector('.leaflet-tile-pane')
+        const overlayPane = mapContainer.querySelector('.leaflet-overlay-pane')
+        const markerPane = mapContainer.querySelector('.leaflet-marker-pane')
+        const popupPane = mapContainer.querySelector('.leaflet-popup-pane')
+        const controls = mapContainer.querySelectorAll('.leaflet-control-container, .map-controls, .turn-by-turn, .bearing-indicator, .compass-indicator')
+        
+        // Reset map layers
+        if (tilePane instanceof HTMLElement) {
+          tilePane.style.transform = ''
+        }
+        if (overlayPane instanceof HTMLElement) {
+          overlayPane.style.transform = ''
+        }
+        if (markerPane instanceof HTMLElement) {
+          markerPane.style.transform = ''
+        }
+        if (popupPane instanceof HTMLElement) {
+          popupPane.style.transform = ''
+        }
+        
+        // Reset controls
+        controls.forEach((control: Element) => {
+          if (control instanceof HTMLElement) {
+            control.style.transform = ''
+          }
+        })
+        
+        // Reset map rotation state and notify parent
+        setCurrentMapRotation(0)
+        if (onMapRotationChange) {
+          onMapRotationChange(0)
+        }
       }
     }
-  }, [deviceHeading, heading, enableCompassRotation, map])
+  }, [deviceHeading, heading, enableCompassRotation, map, onMapRotationChange])
 
   return null
 }
@@ -735,6 +801,7 @@ export default function EnhancedMapView({
   const [autoFollow, setAutoFollow] = useState(true)
   const [isModal, setIsModal] = useState(false)
   const [enableCompassRotation, setEnableCompassRotation] = useState(false)
+  const [mapRotation, setMapRotation] = useState<number>(0)
 
   // Auto-enable compass rotation when navigation starts
   useEffect(() => {
@@ -871,9 +938,9 @@ export default function EnhancedMapView({
         
         {/* Current location marker with accuracy circle */}
         <Marker 
-          key={`current-${currentLocation[0]}-${currentLocation[1]}-${currentLocationData?.heading || 0}`}
+          key={`current-${currentLocation[0]}-${currentLocation[1]}-${currentLocationData?.heading || 0}-${mapRotation}`}
           position={currentLocation} 
-          icon={createCurrentLocationIcon('#3b82f6', currentLocationData?.heading || 0)}
+          icon={createCurrentLocationIcon('#3b82f6', currentLocationData?.heading || 0, mapRotation)}
         >
           <Popup>Your Location</Popup>
         </Marker>
@@ -923,6 +990,7 @@ export default function EnhancedMapView({
           isModal={isModal}
           heading={currentLocationData?.heading}
           enableCompassRotation={enableCompassRotation}
+          onMapRotationChange={setMapRotation}
         />
       </MapContainer>
 

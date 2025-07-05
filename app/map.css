@@ -41,6 +41,35 @@
   position: relative;
 }
 
+/* Map rotation styles - maintain interactivity */
+.leaflet-tile-pane,
+.leaflet-overlay-pane {
+  transform-origin: center center;
+  transition: transform 0.3s ease-out;
+}
+
+/* Keep controls upright during map rotation */
+.leaflet-control-container,
+.map-controls,
+.turn-by-turn,
+.bearing-indicator,
+.compass-indicator {
+  transform-origin: center center;
+  transition: transform 0.3s ease-out;
+}
+
+/* Ensure markers stay properly positioned during rotation */
+.leaflet-marker-pane {
+  transform-origin: center center;
+  transition: transform 0.3s ease-out;
+}
+
+/* Maintain popup positioning during rotation */
+.leaflet-popup-pane {
+  transform-origin: center center;
+  transition: transform 0.3s ease-out;
+}
+
 /* Modal map container - more specific */
 .modal-map-container {
   width: 100%;
