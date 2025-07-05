@@ -6,25 +6,47 @@ import 'leaflet/dist/leaflet.css'
 import '@/app/map.css'
 import L from 'leaflet'
 
-// Function to generate SVG content for the marker icon with a specific color
-const getMarkerSvg = (color: string) => `
+// Function to generate SVG content for the current location marker (arrow direction)
+const getCurrentLocationSvg = (color: string, heading: number = 0) => `
   <svg width="41px" height="41px" viewBox="0 0 365 373" version="1.1" xmlns="http://www.w3.org/2000/svg">
     <ellipse style="fill:${color};fill-opacity:1;stroke-width:0.982647" cx="185.34448" cy="195.28191" rx="174.25156" ry="177.71809" />
-    <g>
+    <g transform="rotate(${heading}, 185.34448, 195.28191)">
       <path style="fill:#ffffff;fill-opacity:1" d="M 97.987608,93.365551 307.36679,198.28625 99.374226,301.82032 151.14126,198.74845 Z" />
     </g>
   </svg>
 `
 
-// Function to create a custom divIcon with a specific color
-const createColoredIcon = (color: string) => {
-  const svgString = getMarkerSvg(color)
+// Function to generate SVG content for destination markers (pin shape)
+const getDestinationSvg = (color: string) => `
+  <svg width="25px" height="41px" viewBox="0 0 25 41" version="1.1" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+          <path class="marker-path" d="M12.5,0 C5.59644063,0 0,5.59644063 0,12.5 C0,19.4035594 12.5,41 12.5,41 C12.5,41 25,19.4035594 25,12.5 C25,5.59644063 19.4035594,0 12.5,0 Z" fill="${color}" fill-rule="nonzero"></path>
+          <circle fill="#FFFFFF" fill-rule="nonzero" cx="12.5" cy="12.5" r="5.5"></circle>
+      </g>
+  </svg>
+`
+
+// Function to create a custom divIcon for current location (arrow direction)
+const createCurrentLocationIcon = (color: string, heading: number = 0) => {
+  const svgString = getCurrentLocationSvg(color, heading)
   return L.divIcon({
     html: svgString,
     className: 'custom-div-icon',
     iconSize: [41, 41],
     iconAnchor: [20, 20],
     popupAnchor: [1, -20],
+  })
+}
+
+// Function to create a custom divIcon for destination markers (pin shape)
+const createDestinationIcon = (color: string) => {
+  const svgString = getDestinationSvg(color)
+  return L.divIcon({
+    html: svgString,
+    className: 'custom-div-icon',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
   })
 }
 
@@ -209,6 +231,85 @@ const MapController = ({
   enableCompassRotation: boolean
 }) => {
   const map = useMap()
+  const [deviceHeading, setDeviceHeading] = useState<number | null>(null)
+  const [isCompassAvailable, setIsCompassAvailable] = useState(false)
+
+  // Initialize device orientation and compass sensors
+  useEffect(() => {
+    if (!enableCompassRotation) return
+
+    let deviceOrientationHandler: ((event: DeviceOrientationEvent) => void) | null = null
+    let compassHandler: ((event: DeviceOrientationEvent) => void) | null = null
+
+    const initCompass = () => {
+      // Check if device orientation is available
+      if (typeof DeviceOrientationEvent !== 'undefined' && 
+          typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+        // iOS 13+ requires permission
+        (DeviceOrientationEvent as any).requestPermission()
+          .then((permission: string) => {
+            if (permission === 'granted') {
+              setupDeviceOrientation()
+            } else {
+              console.warn('Device orientation permission denied')
+            }
+          })
+          .catch((error: any) => {
+            console.warn('Device orientation permission error:', error)
+            // Fallback to GPS heading
+            setupGPSHeading()
+          })
+      } else {
+        // Direct access (Android, older iOS)
+        setupDeviceOrientation()
+      }
+    }
+
+    const setupDeviceOrientation = () => {
+      deviceOrientationHandler = (event: DeviceOrientationEvent) => {
+        if (event.alpha !== null && event.beta !== null && event.gamma !== null) {
+          // Calculate heading from device orientation
+          const alpha = event.alpha || 0
+          const beta = event.beta || 0
+          const gamma = event.gamma || 0
+          
+          // Convert to heading (0-360 degrees)
+          let heading = alpha
+          if (typeof heading === 'number') {
+            // Normalize to 0-360
+            heading = (heading + 360) % 360
+            setDeviceHeading(heading)
+            setIsCompassAvailable(true)
+            console.log('Device orientation heading:', heading)
+          }
+        }
+      }
+
+      window.addEventListener('deviceorientation', deviceOrientationHandler)
+    }
+
+    const setupGPSHeading = () => {
+      // Fallback to GPS heading if device orientation not available
+      if (heading !== undefined && heading !== null) {
+        setDeviceHeading(heading)
+        setIsCompassAvailable(true)
+        console.log('GPS heading:', heading)
+      }
+    }
+
+    // Try to initialize compass
+    initCompass()
+
+    // Cleanup
+    return () => {
+      if (deviceOrientationHandler) {
+        window.removeEventListener('deviceorientation', deviceOrientationHandler)
+      }
+      if (compassHandler) {
+        window.removeEventListener('deviceorientation', compassHandler)
+      }
+    }
+  }, [enableCompassRotation, heading])
 
   useEffect(() => {
     if (isNavigating && autoFollow) {
@@ -222,27 +323,62 @@ const MapController = ({
     }
   }, [currentLocation, destination, isNavigating, autoFollow, map, isModal])
 
-  // Handle compass rotation
+  // Handle compass rotation with actual device sensors
   useEffect(() => {
-    if (enableCompassRotation && heading !== undefined && heading !== null) {
+    const rotationHeading = deviceHeading !== null ? deviceHeading : heading
+    
+    if (enableCompassRotation && rotationHeading !== undefined && rotationHeading !== null) {
       // Rotate the map based on device heading
-      // Note: Leaflet doesn't have built-in rotation, so we'll use CSS transform
       const mapContainer = map.getContainer()
       if (mapContainer) {
-        mapContainer.style.transform = `rotate(${-heading}deg)`
+        // Apply smooth rotation
+        mapContainer.style.transition = 'transform 0.3s ease-out'
+        mapContainer.style.transform = `rotate(${-rotationHeading}deg)`
         mapContainer.style.transformOrigin = 'center center'
-        console.log('Map rotated to heading:', heading)
+        console.log('Map rotated to heading:', rotationHeading, 'Source:', deviceHeading !== null ? 'Device' : 'GPS')
       }
     } else {
       // Reset rotation
       const mapContainer = map.getContainer()
       if (mapContainer) {
+        mapContainer.style.transition = 'transform 0.3s ease-out'
         mapContainer.style.transform = ''
       }
     }
-  }, [heading, enableCompassRotation, map])
+  }, [deviceHeading, heading, enableCompassRotation, map])
 
   return null
+}
+
+// Compass indicator component
+const CompassIndicator = ({ 
+  heading, 
+  isCompassAvailable,
+  isModal 
+}: { 
+  heading: number | null
+  isCompassAvailable: boolean
+  isModal: boolean
+}) => {
+  if (!isCompassAvailable || heading === null) return null
+
+  return (
+    <div className={`compass-indicator ${isModal ? 'modal-compass' : ''}`}>
+      <div className="compass-rose">
+        <div 
+          className="compass-needle" 
+          style={{ transform: `rotate(${heading}deg)` }}
+        />
+        <div className="compass-labels">
+          <span className="north">N</span>
+          <span className="east">E</span>
+          <span className="south">S</span>
+          <span className="west">W</span>
+        </div>
+      </div>
+      <div className="heading-text">{Math.round(heading)}°</div>
+    </div>
+  )
 }
 
 // Component to handle route visualization with offline support and recomputation
@@ -416,6 +552,49 @@ const TurnByTurnNavigation = ({
   const [currentStep, setCurrentStep] = useState<any>(null)
   const [distanceToNext, setDistanceToNext] = useState<number>(0)
   const [lastSpokenInstruction, setLastSpokenInstruction] = useState<string>('')
+  const [voiceEnabled, setVoiceEnabled] = useState(true)
+  const [lastSpokenTime, setLastSpokenTime] = useState<number>(0)
+
+  // Enhanced voice speaking function
+  const speakInstruction = useCallback((text: string) => {
+    if (!voiceEnabled || !('speechSynthesis' in window)) return
+
+    // Prevent too frequent speech
+    const now = Date.now()
+    if (now - lastSpokenTime < 3000) return // Minimum 3 seconds between speech
+
+    try {
+      // Cancel any ongoing speech
+      speechSynthesis.cancel()
+
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.rate = 0.9
+      utterance.pitch = 1.1
+      utterance.volume = 0.8
+      
+      // Set voice to a more natural one if available
+      const voices = speechSynthesis.getVoices()
+      const preferredVoice = voices.find(voice => 
+        voice.lang.includes('en') && (voice.name.includes('Google') || voice.name.includes('Natural'))
+      )
+      if (preferredVoice) {
+        utterance.voice = preferredVoice
+      }
+
+      utterance.onstart = () => {
+        console.log('Speaking instruction:', text)
+      }
+      
+      utterance.onerror = (event) => {
+        console.error('Speech synthesis error:', event)
+      }
+
+      speechSynthesis.speak(utterance)
+      setLastSpokenTime(now)
+    } catch (error) {
+      console.error('Failed to speak instruction:', error)
+    }
+  }, [voiceEnabled, lastSpokenTime])
 
   useEffect(() => {
     if (!routeData?.steps) return
@@ -444,10 +623,23 @@ const TurnByTurnNavigation = ({
       const instruction = step.maneuver.instruction
       if (instruction !== lastSpokenInstruction && distanceToNext < 200) {
         setLastSpokenInstruction(instruction)
+        speakInstruction(instruction)
         onSpeakInstruction(instruction)
       }
     }
-  }, [currentLocation, routeData, distanceToNext, lastSpokenInstruction, onSpeakInstruction])
+  }, [currentLocation, routeData, distanceToNext, lastSpokenInstruction, speakInstruction, onSpeakInstruction])
+
+  // Initialize speech synthesis
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      // Load voices if not already loaded
+      if (speechSynthesis.getVoices().length === 0) {
+        speechSynthesis.onvoiceschanged = () => {
+          console.log('Voices loaded:', speechSynthesis.getVoices().length)
+        }
+      }
+    }
+  }, [])
 
   if (!currentStep) return null
 
@@ -463,6 +655,20 @@ const TurnByTurnNavigation = ({
             {distanceToNext > 0 ? `${Math.round(distanceToNext)}m` : 'Arriving'}
           </div>
         </div>
+        <button
+          onClick={() => {
+            setVoiceEnabled(!voiceEnabled)
+            if (!voiceEnabled) {
+              speakInstruction('Voice navigation enabled')
+            }
+          }}
+          className={`p-2 rounded-full ${voiceEnabled ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-600'}`}
+          title={voiceEnabled ? 'Voice enabled' : 'Voice disabled'}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+          </svg>
+        </button>
       </div>
     </div>
   )
@@ -665,9 +871,9 @@ export default function EnhancedMapView({
         
         {/* Current location marker with accuracy circle */}
         <Marker 
-          key={`current-${currentLocation[0]}-${currentLocation[1]}`}
+          key={`current-${currentLocation[0]}-${currentLocation[1]}-${currentLocationData?.heading || 0}`}
           position={currentLocation} 
-          icon={createColoredIcon('#3b82f6')}
+          icon={createCurrentLocationIcon('#3b82f6', currentLocationData?.heading || 0)}
         >
           <Popup>Your Location</Popup>
         </Marker>
@@ -694,7 +900,7 @@ export default function EnhancedMapView({
         {/* Destination marker */}
         <Marker
           position={destination}
-          icon={createColoredIcon(destinationColor)}
+          icon={createDestinationIcon(destinationColor)}
           ref={destinationMarkerRef}
         />
         
@@ -732,10 +938,36 @@ export default function EnhancedMapView({
             isModal={isModal}
             onSpeakInstruction={(text) => {
               if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(text)
-                utterance.rate = 0.9
-                utterance.pitch = 1.1
-                speechSynthesis.speak(utterance)
+                try {
+                  // Cancel any ongoing speech
+                  speechSynthesis.cancel()
+                  
+                  const utterance = new SpeechSynthesisUtterance(text)
+                  utterance.rate = 0.9
+                  utterance.pitch = 1.1
+                  utterance.volume = 0.8
+                  
+                  // Set voice to a more natural one if available
+                  const voices = speechSynthesis.getVoices()
+                  const preferredVoice = voices.find(voice => 
+                    voice.lang.includes('en') && (voice.name.includes('Google') || voice.name.includes('Natural'))
+                  )
+                  if (preferredVoice) {
+                    utterance.voice = preferredVoice
+                  }
+
+                  utterance.onstart = () => {
+                    console.log('Speaking turn-by-turn instruction:', text)
+                  }
+                  
+                  utterance.onerror = (event) => {
+                    console.error('Speech synthesis error:', event)
+                  }
+
+                  speechSynthesis.speak(utterance)
+                } catch (error) {
+                  console.error('Failed to speak instruction:', error)
+                }
               }
             }}
           />
@@ -775,11 +1007,37 @@ export default function EnhancedMapView({
           <button
             onClick={() => {
               if ('speechSynthesis' in window) {
-                if (speechSynthesis.speaking) {
-                  speechSynthesis.cancel()
-                } else {
-                  const utterance = new SpeechSynthesisUtterance('Voice navigation enabled')
-                  speechSynthesis.speak(utterance)
+                try {
+                  if (speechSynthesis.speaking) {
+                    speechSynthesis.cancel()
+                    console.log('Voice navigation stopped')
+                  } else {
+                    const utterance = new SpeechSynthesisUtterance('Voice navigation enabled')
+                    utterance.rate = 0.9
+                    utterance.pitch = 1.1
+                    utterance.volume = 0.8
+                    
+                    // Set voice to a more natural one if available
+                    const voices = speechSynthesis.getVoices()
+                    const preferredVoice = voices.find(voice => 
+                      voice.lang.includes('en') && (voice.name.includes('Google') || voice.name.includes('Natural'))
+                    )
+                    if (preferredVoice) {
+                      utterance.voice = preferredVoice
+                    }
+
+                    utterance.onstart = () => {
+                      console.log('Voice navigation enabled')
+                    }
+                    
+                    utterance.onerror = (event) => {
+                      console.error('Speech synthesis error:', event)
+                    }
+
+                    speechSynthesis.speak(utterance)
+                  }
+                } catch (error) {
+                  console.error('Failed to toggle voice navigation:', error)
                 }
               }
             }}
