@@ -1,8 +1,23 @@
 /* Full-screen map styles - only apply when not in modal */
 .leaflet-container {
-  height: 100vh !important;
-  width: 100vw !important;
+  height: 100% !important;
+  width: 100% !important;
   z-index: 1;
+}
+
+/* Ensure map container takes full available space */
+.map-container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Full-screen map container */
+.fullscreen-map {
+  width: 100%;
+  height: 100%;
+  position: relative;
 }
 
 /* Modal-specific map styles - more specific selectors */
@@ -329,6 +344,26 @@
   justify-content: space-between;
 }
 
+/* Floating panel styles */
+.floating-panel {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+/* Ensure floating panels don't interfere with map interactions */
+.floating-panel {
+  pointer-events: auto;
+}
+
+.floating-panel * {
+  pointer-events: auto;
+}
+
 /* Navigation info panel */
 .navigation-info {
   position: absolute;
@@ -411,6 +446,29 @@
   .leaflet-container[data-in-modal="true"] {
     height: 60vh !important;
     max-height: 400px;
+  }
+
+  /* Mobile-specific floating panels */
+  .floating-panel {
+    margin: 8px;
+    padding: 12px;
+  }
+
+  /* Ensure map takes full height on mobile */
+  .leaflet-container {
+    height: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Compact status bar on mobile */
+  .status-bar {
+    padding: 4px 8px;
+  }
+
+  /* Smaller controls on mobile */
+  .map-control-button {
+    width: 36px;
+    height: 36px;
   }
 }
 

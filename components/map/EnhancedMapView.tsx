@@ -8,11 +8,11 @@ import L from 'leaflet'
 
 // Function to generate SVG content for the marker icon with a specific color
 const getMarkerSvg = (color: string) => `
-  <svg width="25px" height="41px" viewBox="0 0 25 41" version="1.1" xmlns="http://www.w3.org/2000/svg">
-      <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-          <path class="marker-path" d="M12.5,0 C5.59644063,0 0,5.59644063 0,12.5 C0,19.4035594 12.5,41 12.5,41 C12.5,41 25,19.4035594 25,12.5 C25,5.59644063 19.4035594,0 12.5,0 Z" fill="${color}" fill-rule="nonzero"></path>
-          <circle fill="#FFFFFF" fill-rule="nonzero" cx="12.5" cy="12.5" r="5.5"></circle>
-      </g>
+  <svg width="41px" height="41px" viewBox="0 0 365 373" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <ellipse style="fill:${color};fill-opacity:1;stroke-width:0.982647" cx="185.34448" cy="195.28191" rx="174.25156" ry="177.71809" />
+    <g>
+      <path style="fill:#ffffff;fill-opacity:1" d="M 97.987608,93.365551 307.36679,198.28625 99.374226,301.82032 151.14126,198.74845 Z" />
+    </g>
   </svg>
 `
 
@@ -22,9 +22,9 @@ const createColoredIcon = (color: string) => {
   return L.divIcon({
     html: svgString,
     className: 'custom-div-icon',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
+    iconSize: [41, 41],
+    iconAnchor: [20, 20],
+    popupAnchor: [1, -20],
   })
 }
 
@@ -800,6 +800,23 @@ export default function EnhancedMapView({
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+          </svg>
+        </button>
+
+        {/* Fullscreen toggle */}
+        <button
+          onClick={() => {
+            if (document.fullscreenElement) {
+              document.exitFullscreen()
+            } else {
+              document.documentElement.requestFullscreen()
+            }
+          }}
+          className="map-control-button"
+          title="Toggle fullscreen"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
           </svg>
         </button>
       </div>

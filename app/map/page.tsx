@@ -25,6 +25,7 @@ export default function Map() {
   const [isOnline, setIsOnline] = useState(true) // Default to true, will be updated in useEffect
   const [selectedAlert, setSelectedAlert] = useState<any>(null)
   const [locationHistory, setLocationHistory] = useState<Array<{lat: number, lng: number, time: string}>>([])
+  const [showStatusBar, setShowStatusBar] = useState(true)
   
   const {
     currentLocation,
@@ -192,97 +193,89 @@ export default function Map() {
 
   return (
     <div className="h-screen flex flex-col">
-      {/* Enhanced Status Bar with Alert Info */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3">
-        <div className="flex items-center justify-between">
-          {/* Left side - System status */}
-          <div className="flex items-center gap-4 flex-shrink-0">
-            <Badge variant={isOnline ? "default" : "secondary"} className="flex items-center gap-1">
-              {isOnline ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
-              {isOnline ? 'Online' : 'Offline'}
-            </Badge>
-            <Badge variant="outline" className="flex items-center gap-1">
-              <Target className="h-3 w-3" />
-              Accuracy: {currentLocation.accuracy.toFixed(0)}m
-            </Badge>
-            <Badge variant="default" className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              Tracking
-            </Badge>
-            {currentLocation?.heading !== undefined && (
-              <Badge variant="outline" className="flex items-center gap-1">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                </svg>
-                {Math.round(currentLocation.heading)}°
+      {/* Compact Status Bar */}
+      {showStatusBar && (
+        <div className="bg-white/95 backdrop-blur-sm border-b border-gray-200 px-3 py-2">
+          <div className="flex items-center justify-between text-xs">
+            {/* Left side - System status */}
+            <div className="flex items-center gap-2">
+              <Badge variant={isOnline ? "default" : "secondary"} className="text-xs px-2 py-1">
+                {isOnline ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
               </Badge>
-            )}
-          </div>
+              <span className="text-gray-600">
+                {currentLocation.accuracy.toFixed(0)}m
+              </span>
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              {currentLocation?.heading !== undefined && (
+                <span className="text-gray-600">
+                  {Math.round(currentLocation.heading)}°
+                </span>
+              )}
+            </div>
 
-          {/* Center - Alert information */}
-          {selectedAlert && (
-            <div className="flex flex-col gap-1 items-center flex-1 mx-4">
-              <div className="flex items-center gap-1">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                </svg>
-                <span className="text-sm text-gray-600">{selectedAlert.location}</span>
-              </div>
-              <div className="flex items-center gap-2">
+            {/* Center - Alert information */}
+            {selectedAlert && (
+              <div className="flex items-center gap-2 flex-1 mx-4 justify-center">
                 <div className={`w-2 h-2 rounded-full ${
                   selectedAlert.severity === 'high' ? 'bg-red-500' : 
                   selectedAlert.severity === 'medium' ? 'bg-orange-500' : 'bg-green-500'
                 }`}></div>
-                <span className="font-semibold text-gray-900">{selectedAlert.type}</span>
+                <span className="font-medium text-gray-900 truncate">{selectedAlert.type}</span>
                 <Badge variant={selectedAlert.severity === 'high' ? 'destructive' : 'default'} className="text-xs">
                   {selectedAlert.severity}
                 </Badge>
-                <span className="text-xs text-gray-500">
-                  ID: #{selectedAlert.id} • {new Date(selectedAlert.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                </span>
               </div>
-            </div>
-          )}
-
-          {/* Right side - Navigation controls */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {navigationState.isNavigating ? (
-              <Button 
-                variant="destructive" 
-                size="sm"
-                onClick={stopNavigation}
-                className="flex items-center gap-1"
-              >
-                <Navigation className="h-4 w-4" />
-                Stop Navigation
-              </Button>
-                        ) : (
-              <>
-                <Button 
-                  size="sm"
-                  onClick={handleStartNavigation}
-                  className="flex items-center gap-1"
-                  disabled={!selectedAlert}
-                >
-                  <Navigation className="h-4 w-4" />
-                  Start Navigation
-                </Button>
-                <Button 
-                  size="sm"
-                  variant="outline"
-                  onClick={startLocationTracking}
-                  className="flex items-center gap-1"
-                  title="Refresh location"
-                >
-                  <Target className="h-4 w-4" />
-                </Button>
-              </>
             )}
+
+            {/* Right side - Navigation controls */}
+            <div className="flex items-center gap-1">
+              {navigationState.isNavigating ? (
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={stopNavigation}
+                  className="text-xs px-2 py-1 h-6"
+                >
+                  Stop
+                </Button>
+              ) : (
+                <>
+                  <Button 
+                    size="sm"
+                    onClick={handleStartNavigation}
+                    className="text-xs px-2 py-1 h-6"
+                    disabled={!selectedAlert}
+                  >
+                    Start
+                  </Button>
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    onClick={startLocationTracking}
+                    className="text-xs px-2 py-1 h-6"
+                    title="Refresh location"
+                  >
+                    <Target className="h-3 w-3" />
+                  </Button>
+                </>
+              )}
+              <Button 
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowStatusBar(false)}
+                className="text-xs px-2 py-1 h-6"
+                title="Hide status bar"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Full Screen Map */}
+      {/* Full Screen Map - Takes maximum available space */}
       <div className="flex-1 relative">
         <EnhancedMapView
           currentLocation={[currentLocation.latitude, currentLocation.longitude]}
@@ -297,50 +290,74 @@ export default function Map() {
         />
       </div>
 
-      {/* Navigation Info Panel */}
+      {/* Floating Navigation Panel - Only show when navigating */}
       {navigationState.isNavigating && (
-        <div className="bg-white border-t border-gray-200 p-4">
+        <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-3 shadow-lg">
           <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-gray-900">{navigationState.destinationName}</h3>
-              <p className="text-sm text-gray-600">{navigationState.currentStep}</p>
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900 text-sm">{navigationState.destinationName}</h3>
+              <p className="text-xs text-gray-600">{navigationState.currentStep}</p>
             </div>
             <div className="text-right">
               <p className="text-lg font-bold text-gray-900">{navigationState.distance}</p>
-              <p className="text-sm text-gray-600">{navigationState.estimatedTime}</p>
+              <p className="text-xs text-gray-600">{navigationState.estimatedTime}</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Alert Info Panel (when not navigating) */}
+      {/* Floating Alert Panel - Only show when not navigating */}
       {!navigationState.isNavigating && selectedAlert && (
-        <div className="bg-white border-t border-gray-200 p-4">
+        <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-3 shadow-lg">
           <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-gray-900">Active Emergency</h3>
-              <p className="text-sm text-gray-600">{selectedAlert.description}</p>
-              <p className="text-xs text-gray-500 mt-1">{selectedAlert.location}</p>
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900 text-sm">Active Emergency</h3>
+              <p className="text-xs text-gray-600 truncate">{selectedAlert.description}</p>
             </div>
             <div className="text-right">
-              <Badge variant={selectedAlert.severity === 'high' ? 'destructive' : 'default'}>
+              <Badge variant={selectedAlert.severity === 'high' ? 'destructive' : 'default'} className="text-xs">
                 {selectedAlert.severity}
               </Badge>
-              <p className="text-xs text-gray-500 mt-1">{selectedAlert.status}</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Debug Panel - Location History */}
+      {/* Debug Panel - Floating overlay */}
       {process.env.NODE_ENV === 'development' && locationHistory.length > 0 && (
-        <div className="bg-gray-100 border-t border-gray-200 p-2 text-xs">
-          <div className="font-semibold mb-1">Location History (Debug):</div>
-          {locationHistory.map((loc, index) => (
-            <div key={index} className="text-gray-600">
-              {loc.time}: {loc.lat.toFixed(6)}, {loc.lng.toFixed(6)}
+        <div className="absolute top-16 right-4 bg-gray-100/95 backdrop-blur-sm border border-gray-200 rounded-lg p-2 text-xs max-w-xs">
+          <div className="font-semibold mb-1">Location History:</div>
+          {locationHistory.slice(0, 3).map((loc, index) => (
+            <div key={index} className="text-gray-600 text-xs">
+              {loc.time}: {loc.lat.toFixed(4)}, {loc.lng.toFixed(4)}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Floating Status Indicator - Shows when status bar is hidden */}
+      {!showStatusBar && (
+        <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg p-2 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="text-gray-600">
+              {currentLocation.accuracy.toFixed(0)}m
+            </span>
+            {currentLocation?.heading !== undefined && (
+              <span className="text-gray-600">
+                {Math.round(currentLocation.heading)}°
+              </span>
+            )}
+            <button
+              onClick={() => setShowStatusBar(true)}
+              className="text-gray-500 hover:text-gray-700"
+              title="Show status bar"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
         </div>
       )}
     </div>
